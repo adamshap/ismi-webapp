@@ -339,11 +339,6 @@
         </div>
 
         <div class="chart-container">
-            <div class="chart-title">ISMI over the Last 24 Months</div>
-            <div id="barChart"></div>
-        </div>
-
-        <div class="chart-container">
             <div class="chart-title">ISMI and Its Components</div>
 
             <div class="date-range-control">
@@ -361,6 +356,11 @@
             </div>
 
             <div id="timeSeriesChart"></div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-title">ISMI over the Last 24 Months</div>
+            <div id="barChart"></div>
         </div>
 
         <footer>
@@ -453,7 +453,7 @@
                     name: 'ISMI',
                     type: 'scatter',
                     mode: 'lines',
-                    line: { color: '#004C97', width: 2.5 },
+                    line: { color: '#000000', width: 2.5 },
                     hovertemplate: '<b>%{x}</b><br>ISMI: %{y:.3f}<extra></extra>'
                 }];
             } else if (series === 'components') {
@@ -464,7 +464,7 @@
                         name: 'Positive Momentum',
                         type: 'scatter',
                         mode: 'lines',
-                        line: { color: '#28a745', width: 2 },
+                        line: { color: '#ffb3ba', width: 2 },
                         hovertemplate: '<b>%{x}</b><br>Positive: %{y:.3f}<extra></extra>'
                     },
                     {
@@ -473,7 +473,7 @@
                         name: 'Negative Momentum',
                         type: 'scatter',
                         mode: 'lines',
-                        line: { color: '#dc3545', width: 2 },
+                        line: { color: '#999999', width: 2 },
                         hovertemplate: '<b>%{x}</b><br>Negative: %{y:.3f}<extra></extra>'
                     },
                     {
@@ -482,14 +482,14 @@
                         name: 'ISMI',
                         type: 'scatter',
                         mode: 'lines',
-                        line: { color: '#004C97', width: 2.5 },
+                        line: { color: '#000000', width: 2.5 },
                         hovertemplate: '<b>%{x}</b><br>ISMI: %{y:.3f}<extra></extra>'
                     }
                 ];
             }
 
             // Add PCE if checkbox is checked
-            if (showPCE) {
+            if (showPCE && pce.length > 0) {
                 traces.push({
                     x: dates,
                     y: pce,
@@ -567,7 +567,7 @@
             const barData = allData.slice(-24);
             const barDates = barData.map(d => d.date);
             const barValues = barData.map(d => parseFloat(d[diffCol]));
-            const barColors = barValues.map(v => v >= 0 ? '#28a745' : '#dc3545');
+            const barColors = barValues.map(v => v >= 0 ? '#5DADE2' : '#1F618D');
 
             const barTrace = {
                 x: barDates,
