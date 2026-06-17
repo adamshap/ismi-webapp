@@ -111,6 +111,10 @@
             box-shadow: 0 0 0 2px rgba(0, 76, 151, 0.1);
         }
 
+        button:hover {
+            background: #003366 !important;
+        }
+
         .chart-container {
             margin: 40px 0;
         }
@@ -294,10 +298,6 @@
                 <div class="stat-label">Negative Momentum</div>
                 <div class="stat-value" id="current-neg">--</div>
             </div>
-            <div class="stat-box">
-                <div class="stat-label">PCE Inflation (YoY)</div>
-                <div class="stat-value" id="current-pce">--</div>
-            </div>
         </div>
 
         <div class="controls-section">
@@ -330,10 +330,9 @@
                 </div>
 
                 <div class="control-group">
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-top: 20px;">
-                        <input type="checkbox" id="pce-checkbox" style="width: 18px; height: 18px; cursor: pointer;">
-                        <span>Show PCE Inflation (YoY)</span>
-                    </label>
+                    <button id="download-btn" style="padding: 10px 20px; background: #004C97; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; font-weight: 600; transition: background 0.2s;">
+                        Download Data (CSV)
+                    </button>
                 </div>
             </div>
         </div>
@@ -420,7 +419,6 @@
             const ar = document.getElementById('ar-select').value;
             const k = document.getElementById('k-select').value;
             const series = document.getElementById('series-select').value;
-            const showPCE = document.getElementById('pce-checkbox').checked;
 
             const posCol = `share_pos${k}B_ar${ar}`;
             const negCol = `share_neg${k}B_ar${ar}`;
@@ -432,16 +430,12 @@
             const ismi = timeseriesData.map(d => parseFloat(d[diffCol]));
             const ismiPos = timeseriesData.map(d => parseFloat(d[posCol]));
             const ismiNeg = timeseriesData.map(d => parseFloat(d[negCol]));
-            const pce = timeseriesData.map(d => parseFloat(d.pce_yoy));
 
             // Update stats
             const latest = allData[allData.length - 1];
             document.getElementById('current-ism').textContent = parseFloat(latest[diffCol]).toFixed(3);
             document.getElementById('current-pos').textContent = parseFloat(latest[posCol]).toFixed(3);
             document.getElementById('current-neg').textContent = parseFloat(latest[negCol]).toFixed(3);
-
-            const latestPCE = parseFloat(latest.pce_yoy);
-            document.getElementById('current-pce').textContent = isNaN(latestPCE) ? '--' : latestPCE.toFixed(2) + '%';
 
             // Time series chart
             let traces = [];
@@ -488,20 +482,6 @@
                 ];
             }
 
-            // Add PCE if checkbox is checked
-            if (showPCE && pce.length > 0) {
-                traces.push({
-                    x: dates,
-                    y: pce,
-                    name: 'PCE Inflation (YoY)',
-                    type: 'scatter',
-                    mode: 'lines',
-                    line: { color: '#ff7f0e', width: 2.5, dash: 'dash' },
-                    yaxis: 'y2',
-                    hovertemplate: '<b>%{x}</b><br>PCE: %{y:.2f}%<extra></extra>'
-                });
-            }
-
             // Zero line
             traces.push({
                 x: dates,
@@ -518,7 +498,7 @@
                 font: { family: "'Helvetica Neue', Helvetica, Arial, sans-serif", size: 12, color: '#333' },
                 paper_bgcolor: 'white',
                 plot_bgcolor: 'white',
-                margin: { t: 20, r: showPCE ? 70 : 40, b: 60, l: 70 },
+                margin: { t: 20, r: 40, b: 60, l: 70 },
                 xaxis: {
                     title: '',
                     gridcolor: '#e5e5e5',
@@ -544,18 +524,6 @@
                     borderwidth: 1
                 }
             };
-
-            // Add second y-axis if showing PCE
-            if (showPCE) {
-                timeSeriesLayout.yaxis2 = {
-                    title: 'PCE Inflation (Percent)',
-                    titlefont: { color: '#ff7f0e' },
-                    tickfont: { color: '#ff7f0e' },
-                    overlaying: 'y',
-                    side: 'right',
-                    showgrid: false
-                };
-            }
 
             Plotly.newPlot('timeSeriesChart', traces, timeSeriesLayout, {
                 responsive: true,
@@ -617,7 +585,29 @@
         document.getElementById('k-select').addEventListener('change', updateCharts);
         document.getElementById('ar-select').addEventListener('change', updateCharts);
         document.getElementById('series-select').addEventListener('change', updateCharts);
-        document.getElementById('pce-checkbox').addEventListener('change', updateCharts);
+
+        // Download button
+        document.getElementById('download-btn').addEventListener('click', () => {
+            // Convert allData to CSV
+            if (allData.length === 0) return;
+
+            const headers = Object.keys(allData[0]);
+            const csvContent = [
+                headers.join(','),
+                ...allData.map(row => headers.map(h => row[h]).join(','))
+            ].join('\n');
+
+            // Create download link
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'ism_data.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
 
         // Event listeners for time series sliders
         document.getElementById('timeseries-start-slider').addEventListener('input', (e) => {
