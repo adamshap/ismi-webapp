@@ -321,6 +321,18 @@
             <div class="controls-label">Chart Options</div>
             <div class="controls-grid">
                 <div class="control-group">
+                    <label for="inflation-series-select">Inflation Series</label>
+                    <select id="inflation-series-select">
+                        <option value="" selected>Headline</option>
+                        <option value="_c">Core</option>
+                        <option value="_g">Goods</option>
+                        <option value="_s">Non-Housing Services</option>
+                        <option value="_h">Housing</option>
+                        <option value="_cg">Core Goods</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
                     <label for="ar-select">AR Model</label>
                     <select id="ar-select">
                         <option value="1" selected>AR(1)</option>
@@ -339,18 +351,6 @@
                 </div>
 
                 <div class="control-group">
-                    <label for="inflation-series-select">Inflation Series</label>
-                    <select id="inflation-series-select">
-                        <option value="" selected>Headline</option>
-                        <option value="_c">Core</option>
-                        <option value="_g">Goods</option>
-                        <option value="_s">Non-Housing Services</option>
-                        <option value="_h">Housing</option>
-                        <option value="_cg">Core Goods</option>
-                    </select>
-                </div>
-
-                <div class="control-group">
                     <label for="series-select">Series to Display</label>
                     <select id="series-select">
                         <option value="diff" selected>ISMI</option>
@@ -364,13 +364,13 @@
                         <label for="show-pce">Show YoY PCE Inflation</label>
                     </div>
                 </div>
-
-                <div class="control-group">
-                    <button id="download-btn" style="padding: 10px 20px; background: #004C97; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; font-weight: 600; transition: background 0.2s;">
-                        Download Data (CSV)
-                    </button>
-                </div>
             </div>
+        </div>
+
+        <div class="controls-section" style="margin-top: 20px; text-align: center;">
+            <button id="download-btn" style="padding: 12px 30px; background: #004C97; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; font-weight: 600; transition: background 0.2s;">
+                Download Data (CSV)
+            </button>
         </div>
 
         <div class="chart-container">
