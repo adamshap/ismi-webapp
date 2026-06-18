@@ -582,15 +582,6 @@
                     linewidth: 1,
                     zeroline: false
                 },
-                yaxis2: showPCE ? {
-                    title: 'YoY PCE Inflation (%)',
-                    overlaying: 'y',
-                    side: 'right',
-                    gridcolor: 'transparent',
-                    showline: true,
-                    linecolor: '#d0d0d0',
-                    linewidth: 1
-                } : undefined,
                 hovermode: 'x unified',
                 showlegend: true,
                 legend: {
@@ -601,6 +592,19 @@
                     borderwidth: 1
                 }
             };
+
+            // Add yaxis2 only if showing PCE
+            if (showPCE) {
+                timeSeriesLayout.yaxis2 = {
+                    title: 'YoY PCE Inflation (%)',
+                    overlaying: 'y',
+                    side: 'right',
+                    gridcolor: 'transparent',
+                    showline: true,
+                    linecolor: '#d0d0d0',
+                    linewidth: 1
+                };
+            }
 
             Plotly.newPlot('timeSeriesChart', traces, timeSeriesLayout, {
                 responsive: true,
