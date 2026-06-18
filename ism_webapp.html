@@ -299,7 +299,7 @@
         </header>
 
         <div class="description">
-            The Inflation Shock Momentum Index (ISMI) measures the share of PCE categories experiencing consecutive months of positive inflation shocks minus the share experiencing consecutive negative shocks. The index provides a real-time measure of inflation momentum across different product categories.
+            The Inflation Shock Momentum Index (ISMI) measures the share of PCE categories experiencing consecutive months of positive inflation shocks minus the share experiencing consecutive negative shocks. The index provides a real-time measure of inflation momentum across different product categories. You can view ISMI for headline PCE, core PCE, goods, non-housing services, housing, and core goods.
         </div>
 
         <div class="stats-container">
@@ -335,6 +335,18 @@
                         <option value="2">k=2 (2 consecutive months)</option>
                         <option value="3" selected>k=3 (3 consecutive months)</option>
                         <option value="4">k=4 (4 consecutive months)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="inflation-series-select">Inflation Series</label>
+                    <select id="inflation-series-select">
+                        <option value="" selected>Headline</option>
+                        <option value="_c">Core</option>
+                        <option value="_g">Goods</option>
+                        <option value="_s">Non-Housing Services</option>
+                        <option value="_h">Housing</option>
+                        <option value="_cg">Core Goods</option>
                     </select>
                 </div>
 
@@ -456,10 +468,22 @@
             const k = document.getElementById('k-select').value;
             const series = document.getElementById('series-select').value;
             const showPCE = document.getElementById('show-pce').checked;
+            const inflationSeries = document.getElementById('inflation-series-select').value;
 
-            const posCol = `share_pos${k}B_ar${ar}`;
-            const negCol = `share_neg${k}B_ar${ar}`;
-            const diffCol = `share_diff${k}B_ar${ar}`;
+            // Map series suffix to friendly name
+            const seriesMap = {
+                '': 'headline',
+                '_c': 'core',
+                '_g': 'goods',
+                '_s': 'services',
+                '_h': 'housing',
+                '_cg': 'coregoods'
+            };
+            const seriesName = seriesMap[inflationSeries];
+
+            const posCol = `ismi_${seriesName}_positive_ar${ar}_k${k}`;
+            const negCol = `ismi_${seriesName}_negative_ar${ar}_k${k}`;
+            const diffCol = `ismi_${seriesName}_ar${ar}_k${k}`;
 
             // Debug: Check if columns exist
             if (allData.length > 0) {
@@ -479,7 +503,7 @@
             const ismi = timeseriesData.map(d => parseFloat(d[diffCol]));
             const ismiPos = timeseriesData.map(d => parseFloat(d[posCol]));
             const ismiNeg = timeseriesData.map(d => parseFloat(d[negCol]));
-            const pce = timeseriesData.map(d => parseFloat(d['pce_y']));
+            const pce = timeseriesData.map(d => parseFloat(d['pce_yoy']));
 
             console.log('Sample data check:', {
                 diffCol: diffCol,
@@ -675,6 +699,7 @@
         // Event listeners for controls
         document.getElementById('k-select').addEventListener('change', updateCharts);
         document.getElementById('ar-select').addEventListener('change', updateCharts);
+        document.getElementById('inflation-series-select').addEventListener('change', updateCharts);
         document.getElementById('series-select').addEventListener('change', updateCharts);
         document.getElementById('show-pce').addEventListener('change', updateCharts);
 
