@@ -405,14 +405,14 @@
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const text = await response.text();
-                const lines = text.trim().split('\n');
-                const headers = lines[0].split(',');
+                const lines = text.trim().split(/\r?\n/);
+                const headers = lines[0].split(',').map(h => h.trim());
 
-                allData = lines.slice(1).map(line => {
+                allData = lines.slice(1).filter(line => line.trim()).map(line => {
                     const values = line.split(',');
                     const row = {};
                     headers.forEach((header, i) => {
-                        row[header] = values[i];
+                        row[header.trim()] = values[i];
                     });
                     return row;
                 });
@@ -476,13 +476,20 @@
             // Get filtered data for time series
             const timeseriesData = allData.slice(timeseriesStartIdx, timeseriesEndIdx + 1);
             const dates = timeseriesData.map(d => d.date);
-            const ismi = timeseriesData.map(d => parseFloat(d[diffCol]) || 0);
-            const ismiPos = timeseriesData.map(d => parseFloat(d[posCol]) || 0);
-            const ismiNeg = timeseriesData.map(d => parseFloat(d[negCol]) || 0);
-            const pce = timeseriesData.map(d => parseFloat(d['pce_y']) || 0);
+            const ismi = timeseriesData.map(d => parseFloat(d[diffCol]));
+            const ismiPos = timeseriesData.map(d => parseFloat(d[posCol]));
+            const ismiNeg = timeseriesData.map(d => parseFloat(d[negCol]));
+            const pce = timeseriesData.map(d => parseFloat(d['pce_y']));
 
+            console.log('Sample data check:', {
+                diffCol: diffCol,
+                firstRow: allData[0],
+                hasColumn: diffCol in allData[0],
+                sampleValue: allData[0][diffCol],
+                parsedValue: parseFloat(allData[0][diffCol])
+            });
             console.log('Sample ISMI values:', ismi.slice(0, 5));
-            console.log('Data exists?', {dates: dates.length, ismi: ismi.length, hasValues: ismi.some(v => v !== 0)});
+            console.log('Data exists?', {dates: dates.length, ismi: ismi.length, hasValues: ismi.some(v => !isNaN(v) && v !== 0)});
 
             // Update stats
             const latest = allData[allData.length - 1];
