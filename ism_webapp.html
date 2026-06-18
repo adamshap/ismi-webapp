@@ -498,6 +498,7 @@
                     type: 'scatter',
                     mode: 'lines',
                     line: { color: '#000000', width: 2.5 },
+                    yaxis: 'y',
                     hovertemplate: '<b>%{x}</b><br>ISMI: %{y:.3f}<extra></extra>'
                 }];
             } else if (series === 'components') {
@@ -509,6 +510,7 @@
                         type: 'scatter',
                         mode: 'lines',
                         line: { color: '#ffb3ba', width: 2 },
+                        yaxis: 'y',
                         hovertemplate: '<b>%{x}</b><br>Positive: %{y:.3f}<extra></extra>'
                     },
                     {
@@ -518,6 +520,7 @@
                         type: 'scatter',
                         mode: 'lines',
                         line: { color: '#999999', width: 2 },
+                        yaxis: 'y',
                         hovertemplate: '<b>%{x}</b><br>Negative: %{y:.3f}<extra></extra>'
                     },
                     {
@@ -527,6 +530,7 @@
                         type: 'scatter',
                         mode: 'lines',
                         line: { color: '#000000', width: 2.5 },
+                        yaxis: 'y',
                         hovertemplate: '<b>%{x}</b><br>ISMI: %{y:.3f}<extra></extra>'
                     }
                 ];
@@ -562,7 +566,7 @@
                 font: { family: "'Helvetica Neue', Helvetica, Arial, sans-serif", size: 12, color: '#333' },
                 paper_bgcolor: 'white',
                 plot_bgcolor: 'white',
-                margin: { t: 20, r: 80, b: 60, l: 70 },
+                margin: { t: 20, r: showPCE ? 80 : 40, b: 60, l: 70 },
                 xaxis: {
                     title: '',
                     gridcolor: '#e5e5e5',
