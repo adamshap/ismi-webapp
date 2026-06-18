@@ -401,6 +401,9 @@
         async function loadData() {
             try {
                 const response = await fetch('ism_data.csv');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 const text = await response.text();
                 const lines = text.trim().split('\n');
                 const headers = lines[0].split(',');
@@ -413,6 +416,14 @@
                     });
                     return row;
                 });
+
+                console.log('Data loaded successfully:', allData.length, 'rows');
+                console.log('First row:', allData[0]);
+                console.log('Headers:', headers);
+
+                if (allData.length === 0) {
+                    throw new Error('No data found in CSV file');
+                }
 
                 // Initialize sliders
                 const maxIdx = allData.length - 1;
@@ -430,7 +441,8 @@
                 updateCharts();
             } catch (error) {
                 console.error('Error loading data:', error);
-                document.getElementById('timeSeriesChart').innerHTML = '<div style="padding: 40px; text-align: center; color: #999;">Error loading data. Please make sure ism_data.csv is in the same directory.</div>';
+                document.getElementById('timeSeriesChart').innerHTML = '<div style="padding: 40px; text-align: center; color: #999;">Error loading data: ' + error.message + '<br>Please make sure ism_data.csv is in the same directory.</div>';
+                document.getElementById('barChart').innerHTML = '<div style="padding: 40px; text-align: center; color: #999;">Error loading data</div>';
             }
         }
 
