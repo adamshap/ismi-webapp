@@ -476,10 +476,13 @@
             // Get filtered data for time series
             const timeseriesData = allData.slice(timeseriesStartIdx, timeseriesEndIdx + 1);
             const dates = timeseriesData.map(d => d.date);
-            const ismi = timeseriesData.map(d => parseFloat(d[diffCol]));
-            const ismiPos = timeseriesData.map(d => parseFloat(d[posCol]));
-            const ismiNeg = timeseriesData.map(d => parseFloat(d[negCol]));
-            const pce = timeseriesData.map(d => parseFloat(d['pce_y']));
+            const ismi = timeseriesData.map(d => parseFloat(d[diffCol]) || 0);
+            const ismiPos = timeseriesData.map(d => parseFloat(d[posCol]) || 0);
+            const ismiNeg = timeseriesData.map(d => parseFloat(d[negCol]) || 0);
+            const pce = timeseriesData.map(d => parseFloat(d['pce_y']) || 0);
+
+            console.log('Sample ISMI values:', ismi.slice(0, 5));
+            console.log('Data exists?', {dates: dates.length, ismi: ismi.length, hasValues: ismi.some(v => v !== 0)});
 
             // Update stats
             const latest = allData[allData.length - 1];
