@@ -926,12 +926,12 @@
                 columns.push('pce_y');
             }
 
-            // Add selected series columns
-            const prefix = `share_pos${kValue}B_ar${arOrder}`;
-            const negPrefix = `share_neg${kValue}B_ar${arOrder}`;
-            const diffPrefix = `share_diff${kValue}B_ar${arOrder}`;
+            // Add selected series columns (ISMI, positive momentum, negative momentum)
+            const diffPrefix = `share_diff${kValue}B_ar${arOrder}`;  // ISMI
+            const posPrefix = `share_pos${kValue}B_ar${arOrder}`;    // Positive momentum
+            const negPrefix = `share_neg${kValue}B_ar${arOrder}`;    // Negative momentum
 
-            columns.push(prefix, negPrefix, diffPrefix);
+            columns.push(diffPrefix, posPrefix, negPrefix);
 
             // Create CSV with selected columns
             const csvContent = [
