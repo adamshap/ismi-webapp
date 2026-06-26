@@ -936,9 +936,16 @@
             }
 
             // Add selected series columns (ISMI, positive momentum, negative momentum)
-            const diffPrefix = `share_diff${kValue}B_ar${arOrder}`;  // ISMI
-            const posPrefix = `share_pos${kValue}B_ar${arOrder}`;    // Positive momentum
-            const negPrefix = `share_neg${kValue}B_ar${arOrder}`;    // Negative momentum
+            // New format after export script rename
+            const seriesType = inflationSeries === '' ? 'headline' :
+                               inflationSeries === '_c' ? 'core' :
+                               inflationSeries === '_g' ? 'goods' :
+                               inflationSeries === '_s' ? 'services' :
+                               inflationSeries === '_h' ? 'housing' : 'coregoods';
+
+            const diffPrefix = `ismi_${seriesType}_ar${arOrder}_k${kValue}`;  // ISMI
+            const posPrefix = `ismi_${seriesType}_positive_ar${arOrder}_k${kValue}`;    // Positive momentum
+            const negPrefix = `ismi_${seriesType}_negative_ar${arOrder}_k${kValue}`;    // Negative momentum
 
             console.log('Column names:', diffPrefix, posPrefix, negPrefix);
             console.log('Sample values:', filteredData[0]?.[diffPrefix], filteredData[0]?.[posPrefix], filteredData[0]?.[negPrefix]);
