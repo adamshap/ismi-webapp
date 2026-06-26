@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>ISMI - Inflation Shock Momentum Index</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <style>
@@ -606,7 +609,7 @@
         async function loadData() {
             try {
                 // Add cache buster to always fetch latest data
-                const cacheBuster = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+                const cacheBuster = Date.now(); // Use timestamp for immediate refresh
                 const response = await fetch(`ism_data.csv?v=${cacheBuster}`);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -932,7 +935,7 @@
             const columns = ['date'];
 
             if (showPCE) {
-                columns.push('pce_y');
+                columns.push('pce_yoy');
             }
 
             // Add selected series columns (ISMI, positive momentum, negative momentum)
