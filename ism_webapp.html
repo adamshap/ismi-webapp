@@ -909,7 +909,10 @@
 
         // Download current view button
         document.getElementById('download-view-btn').addEventListener('click', () => {
-            if (allData.length === 0) return;
+            if (allData.length === 0) {
+                alert('No data loaded yet');
+                return;
+            }
 
             const inflationSeries = document.getElementById('inflation-series-select').value;
             const kValue = document.getElementById('k-select').value;
@@ -918,6 +921,12 @@
 
             // Get filtered data based on current selections
             const filteredData = allData.slice(timeseriesStartIdx, timeseriesEndIdx + 1);
+
+            console.log('Download Debug:');
+            console.log('k=', kValue, 'ar=', arOrder, 'series=', inflationSeries);
+            console.log('timeseriesStartIdx=', timeseriesStartIdx, 'timeseriesEndIdx=', timeseriesEndIdx);
+            console.log('filteredData length=', filteredData.length);
+            console.log('First row:', filteredData[0]);
 
             // Build column list based on selections
             const columns = ['date'];
@@ -930,6 +939,9 @@
             const diffPrefix = `share_diff${kValue}B_ar${arOrder}`;  // ISMI
             const posPrefix = `share_pos${kValue}B_ar${arOrder}`;    // Positive momentum
             const negPrefix = `share_neg${kValue}B_ar${arOrder}`;    // Negative momentum
+
+            console.log('Column names:', diffPrefix, posPrefix, negPrefix);
+            console.log('Sample values:', filteredData[0]?.[diffPrefix], filteredData[0]?.[posPrefix], filteredData[0]?.[negPrefix]);
 
             columns.push(diffPrefix, posPrefix, negPrefix);
 
