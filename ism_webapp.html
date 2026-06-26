@@ -557,8 +557,11 @@
         </div>
 
         <div style="margin: 40px 0; text-align: center;">
-            <button id="download-btn" style="padding: 12px 30px; background: #004C97; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; font-weight: 600; transition: background 0.2s;">
-                Download Data (CSV)
+            <button id="download-full-btn" style="padding: 12px 30px; background: #004C97; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; font-weight: 600; transition: background 0.2s; margin-right: 15px;">
+                Download Full Dataset (Excel)
+            </button>
+            <button id="download-view-btn" style="padding: 12px 30px; background: #004C97; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; font-weight: 600; transition: background 0.2s;">
+                Download Current View (CSV)
             </button>
         </div>
 
@@ -895,23 +898,56 @@
         document.getElementById('series-select').addEventListener('change', updateCharts);
         document.getElementById('show-pce').addEventListener('change', updateCharts);
 
-        // Download button
-        document.getElementById('download-btn').addEventListener('click', () => {
-            // Convert allData to CSV
+        // Download full dataset button - downloads Excel file from GitHub
+        document.getElementById('download-full-btn').addEventListener('click', () => {
+            const url = 'ismi_data.xlsx';
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ismi_data.xlsx';
+            a.click();
+        });
+
+        // Download current view button
+        document.getElementById('download-view-btn').addEventListener('click', () => {
             if (allData.length === 0) return;
 
-            const headers = Object.keys(allData[0]);
+            const inflationSeries = document.getElementById('inflation-series-select').value;
+            const kValue = document.getElementById('k-select').value;
+            const arOrder = document.getElementById('ar-select').value;
+            const showPCE = document.getElementById('show-pce').checked;
+
+            // Get filtered data based on current selections
+            const filteredData = allData.slice(timeseriesStartIdx, timeseriesEndIdx + 1);
+
+            // Build column list based on selections
+            const columns = ['date'];
+
+            if (showPCE) {
+                columns.push('pce_y');
+            }
+
+            // Add selected series columns
+            const prefix = `share_pos${kValue}B_ar${arOrder}`;
+            const negPrefix = `share_neg${kValue}B_ar${arOrder}`;
+            const diffPrefix = `share_diff${kValue}B_ar${arOrder}`;
+
+            columns.push(prefix, negPrefix, diffPrefix);
+
+            // Create CSV with selected columns
             const csvContent = [
-                headers.join(','),
-                ...allData.map(row => headers.map(h => row[h]).join(','))
+                columns.join(','),
+                ...filteredData.map(row => columns.map(col => row[col] || '').join(','))
             ].join('\n');
 
-            // Create download link
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
             link.setAttribute('href', url);
-            link.setAttribute('download', 'ism_data.csv');
+
+            const startDate = filteredData[0]?.date || 'start';
+            const endDate = filteredData[filteredData.length - 1]?.date || 'end';
+            link.setAttribute('download', `ismi_k${kValue}_ar${arOrder}_${startDate}_to_${endDate}.csv`);
+
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
