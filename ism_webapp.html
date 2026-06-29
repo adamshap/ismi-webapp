@@ -603,9 +603,29 @@
                     </button>
 
                     <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
-                        <div class="checkbox-control">
+                        <div class="checkbox-control" style="margin-bottom: 15px;">
                             <input type="checkbox" id="show-pce" />
                             <label for="show-pce">Show YoY PCE Inflation</label>
+                        </div>
+
+                        <div class="checkbox-control">
+                            <input type="checkbox" id="compare-series-toggle" />
+                            <label for="compare-series-toggle">Compare with second series</label>
+                        </div>
+
+                        <div id="compare-series-dropdown" style="display: none; margin-top: 12px;">
+                            <div class="control-group">
+                                <label for="compare-series-select">Second Series to Compare</label>
+                                <select id="compare-series-select">
+                                    <option value="" selected>-- Select Series --</option>
+                                    <option value="">Headline</option>
+                                    <option value="_c">Core</option>
+                                    <option value="_g">Goods</option>
+                                    <option value="_s">Non-Housing Services</option>
+                                    <option value="_h">Housing</option>
+                                    <option value="_cg">Core Goods</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -707,6 +727,21 @@
             }
         }
 
+        // Compare series toggle
+        function toggleCompareSeriesDropdown() {
+            const checkbox = document.getElementById('compare-series-toggle');
+            const dropdown = document.getElementById('compare-series-dropdown');
+
+            if (checkbox.checked) {
+                dropdown.style.display = 'block';
+            } else {
+                dropdown.style.display = 'none';
+                // Reset the comparison selection when unchecked
+                document.getElementById('compare-series-select').value = '';
+            }
+            updateCharts();
+        }
+
         // Auto-expand controls on desktop, start collapsed on mobile
         function checkScreenSize() {
             const panel = document.getElementById('controlsPanel');
@@ -786,6 +821,8 @@
             const series = document.getElementById('series-select').value;
             const showPCE = document.getElementById('show-pce').checked;
             const inflationSeries = document.getElementById('inflation-series-select').value;
+            const compareSeriesToggle = document.getElementById('compare-series-toggle').checked;
+            const compareSeries = document.getElementById('compare-series-select').value;
 
             // Map series suffix to friendly name
             const seriesMap = {
@@ -796,11 +833,28 @@
                 '_h': 'housing',
                 '_cg': 'coregoods'
             };
+            const seriesLabels = {
+                '': 'Headline',
+                '_c': 'Core',
+                '_g': 'Goods',
+                '_s': 'Non-Housing Services',
+                '_h': 'Housing',
+                '_cg': 'Core Goods'
+            };
             const seriesName = seriesMap[inflationSeries];
 
             const posCol = `ismi_${seriesName}_positive_ar${ar}_k${k}`;
             const negCol = `ismi_${seriesName}_negative_ar${ar}_k${k}`;
             const diffCol = `ismi_${seriesName}_ar${ar}_k${k}`;
+
+            // Comparison series columns (if enabled)
+            let compareSeriesName = null;
+            let compareDiffCol = null;
+            let compareIsmi = null;
+            if (compareSeriesToggle && compareSeries !== '') {
+                compareSeriesName = seriesMap[compareSeries];
+                compareDiffCol = `ismi_${compareSeriesName}_ar${ar}_k${k}`;
+            }
 
             // Get filtered data for time series
             const timeseriesData = allData.slice(timeseriesStartIdx, timeseriesEndIdx + 1);
@@ -809,6 +863,11 @@
             const ismiPos = timeseriesData.map(d => parseFloat(d[posCol]));
             const ismiNeg = timeseriesData.map(d => parseFloat(d[negCol]));
             const pce = timeseriesData.map(d => parseFloat(d['pce_yoy']));
+
+            // Get comparison series data if enabled
+            if (compareDiffCol) {
+                compareIsmi = timeseriesData.map(d => parseFloat(d[compareDiffCol]));
+            }
 
             // Update stats
             const latest = allData[allData.length - 1];
@@ -857,8 +916,12 @@
 
             // Show ISMI line only if not "components_only"
             if (series !== 'components_only') {
+                const primaryLabel = compareSeriesToggle && compareSeries !== ''
+                    ? `ISMI - ${seriesLabels[inflationSeries]}`
+                    : 'ISMI';
+
                 datasets.push({
-                    label: 'ISMI',
+                    label: primaryLabel,
                     data: dates.map((date, i) => ({ x: date, y: ismi[i] })),
                     borderColor: '#001f3f',
                     backgroundColor: '#001f3f',
@@ -869,6 +932,23 @@
                     pointRadius: 0,
                     pointHoverRadius: 4
                 });
+
+                // Add comparison series if enabled
+                if (compareSeriesToggle && compareSeries !== '' && compareIsmi) {
+                    datasets.push({
+                        label: `ISMI - ${seriesLabels[compareSeries]}`,
+                        data: dates.map((date, i) => ({ x: date, y: compareIsmi[i] })),
+                        borderColor: '#E67E22',
+                        backgroundColor: '#E67E22',
+                        borderWidth: 2.5,
+                        borderDash: [8, 4],
+                        fill: false,
+                        tension: 0.1,
+                        yAxisID: 'y',
+                        pointRadius: 0,
+                        pointHoverRadius: 4
+                    });
+                }
             }
 
             // Add PCE if checkbox is checked
@@ -1068,6 +1148,9 @@
             document.getElementById('k-select').value = '3';  // k=3
             document.getElementById('series-select').value = 'diff';  // ISMI only
             document.getElementById('show-pce').checked = false;  // PCE off
+            document.getElementById('compare-series-toggle').checked = false;  // Comparison off
+            document.getElementById('compare-series-select').value = '';  // Reset comparison series
+            document.getElementById('compare-series-dropdown').style.display = 'none';  // Hide dropdown
 
             // Reset date range to full range
             const maxIdx = allData.length - 1;
@@ -1086,6 +1169,8 @@
         document.getElementById('inflation-series-select').addEventListener('change', updateCharts);
         document.getElementById('series-select').addEventListener('change', updateCharts);
         document.getElementById('show-pce').addEventListener('change', updateCharts);
+        document.getElementById('compare-series-toggle').addEventListener('change', toggleCompareSeriesDropdown);
+        document.getElementById('compare-series-select').addEventListener('change', updateCharts);
         document.getElementById('reset-btn').addEventListener('click', resetToBaseline);
         document.getElementById('advanced-toggle').addEventListener('click', toggleAdvanced);
 
