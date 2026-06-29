@@ -225,6 +225,14 @@
             height: 500px;
         }
 
+        .chart-wrapper > div {
+            pointer-events: none;
+        }
+
+        .chart-wrapper > div .checkbox-control {
+            pointer-events: auto;
+        }
+
         .chart-wrapper canvas {
             border: 1px solid #e0e0e0;
             border-radius: 4px;
@@ -480,15 +488,19 @@
                 width: 100%;
             }
 
-            /* Move PCE checkbox below title on mobile */
-            .chart-container > div:nth-child(2) {
-                position: static !important;
-                margin-bottom: 15px;
+            /* Move PCE checkbox to top left on mobile */
+            .chart-wrapper > div {
+                top: 10px !important;
+                right: auto !important;
+                left: 10px !important;
             }
 
-            .chart-container .checkbox-control {
-                width: 100%;
-                box-sizing: border-box;
+            .chart-wrapper .checkbox-control {
+                padding: 6px 10px !important;
+            }
+
+            .chart-wrapper .checkbox-control label {
+                font-size: 11px !important;
             }
         }
 
@@ -544,18 +556,6 @@
                 <div class="controls-label desktop-only">Chart Options</div>
                 <div class="controls-grid">
                 <div class="control-group">
-                    <label for="inflation-series-select">Inflation Series</label>
-                    <select id="inflation-series-select">
-                        <option value="" selected>Headline</option>
-                        <option value="_c">Core</option>
-                        <option value="_g">Goods</option>
-                        <option value="_s">Non-Housing Services</option>
-                        <option value="_h">Housing</option>
-                        <option value="_cg">Core Goods</option>
-                    </select>
-                </div>
-
-                <div class="control-group">
                     <label for="series-select">Series to Display</label>
                     <select id="series-select">
                         <option value="diff" selected>ISMI</option>
@@ -574,11 +574,23 @@
                 <div id="advanced-content" style="display: none; margin-top: 15px;">
                     <div style="padding: 12px; background: #f8f9fa; border-left: 3px solid #004C97; border-radius: 3px; margin-bottom: 15px;">
                         <p style="margin: 0; font-size: 13px; color: #555; line-height: 1.6;">
-                            <strong style="color: #004C97;">Note:</strong> The baseline specification in the paper uses AR(1) with k=3 (3 consecutive months).
+                            <strong style="color: #004C97;">Note:</strong> The baseline specification in the paper uses Headline PCE with AR(1) and k=3 (3 consecutive months).
                         </p>
                     </div>
 
                     <div class="controls-grid">
+                        <div class="control-group">
+                            <label for="inflation-series-select">Inflation Series</label>
+                            <select id="inflation-series-select">
+                                <option value="" selected>Headline</option>
+                                <option value="_c">Core</option>
+                                <option value="_g">Goods</option>
+                                <option value="_s">Non-Housing Services</option>
+                                <option value="_h">Housing</option>
+                                <option value="_cg">Core Goods</option>
+                            </select>
+                        </div>
+
                         <div class="control-group">
                             <label for="ar-select">AR Model</label>
                             <select id="ar-select">
@@ -597,24 +609,17 @@
                             </select>
                         </div>
                     </div>
+
+                    <button id="reset-btn" style="margin-top: 15px; width: 100%; padding: 8px; background: #6c757d; color: white; border: none; border-radius: 3px; font-size: 13px; cursor: pointer; font-weight: 500; transition: background 0.2s;">
+                        Reset to Baseline
+                    </button>
                 </div>
             </div>
-
-            <button id="reset-btn" style="margin-top: 15px; width: 100%; padding: 8px; background: #6c757d; color: white; border: none; border-radius: 3px; font-size: 13px; cursor: pointer; font-weight: 500; transition: background 0.2s;">
-                Reset to Baseline
-            </button>
             </div>
         </div>
 
         <div class="chart-container">
             <div class="chart-title">ISMI and Its Components</div>
-
-            <div style="position: absolute; top: 25px; right: 25px; z-index: 10;">
-                <div class="checkbox-control" style="background: white; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <input type="checkbox" id="show-pce" />
-                    <label for="show-pce" style="font-size: 12px; color: #555; font-weight: 500;">Show YoY PCE Inflation</label>
-                </div>
-            </div>
 
             <div class="date-range-control">
                 <div class="date-range-label">Date Range</div>
@@ -632,6 +637,12 @@
 
             <div class="chart-wrapper">
                 <canvas id="timeSeriesChart"></canvas>
+                <div style="position: absolute; top: 60px; right: 40px; z-index: 10;">
+                    <div class="checkbox-control" style="background: rgba(255,255,255,0.95); padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <input type="checkbox" id="show-pce" />
+                        <label for="show-pce" style="font-size: 12px; color: #555; font-weight: 500;">Show YoY PCE Inflation</label>
+                    </div>
+                </div>
             </div>
         </div>
 
