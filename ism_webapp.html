@@ -24,9 +24,14 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 20px;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 30px;
         }
 
         header {
@@ -60,11 +65,15 @@
         }
 
         .controls-section {
-            margin: 30px 0;
-            padding: 25px;
-            background: #ffffff;
-            border: 1px solid #e0e0e0;
-            border-radius: 4px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            width: 280px;
+            flex-shrink: 0;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
         }
 
         .controls-label {
@@ -77,9 +86,16 @@
         }
 
         .controls-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            display: flex;
+            flex-direction: column;
             gap: 20px;
+        }
+
+        .charts {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
         }
 
         .control-group {
@@ -324,6 +340,11 @@
                 padding: 15px 10px;
             }
 
+            .main-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+
             header {
                 padding: 20px 15px;
             }
@@ -343,14 +364,19 @@
             }
 
             .controls-section {
+                width: 100%;
+                padding: 15px;
+                order: 2;
                 position: sticky;
                 bottom: 0;
                 z-index: 100;
-                margin: 20px 0 0 0;
-                padding: 15px;
                 max-height: 70vh;
                 overflow-y: auto;
                 box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            }
+
+            .charts {
+                order: 1;
             }
 
             .controls-section.collapsed {
@@ -392,7 +418,6 @@
             }
 
             .controls-grid {
-                grid-template-columns: 1fr;
                 gap: 15px;
             }
 
@@ -531,22 +556,8 @@
             The Inflation Shock Momentum Index (ISMI) measures the share of PCE categories experiencing consecutive months of positive inflation shocks minus the share experiencing consecutive negative shocks. The index provides a real-time measure of inflation momentum across different product categories. You can view ISMI for headline PCE, core PCE, goods, non-housing services, housing, and core goods.
         </div>
 
-        <div class="stats-container">
-            <div class="stat-box">
-                <div class="stat-label">Current ISMI</div>
-                <div class="stat-value" id="current-ism">--</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">Positive Momentum</div>
-                <div class="stat-value" id="current-pos">--</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">Negative Momentum</div>
-                <div class="stat-value" id="current-neg">--</div>
-            </div>
-        </div>
-
-        <div class="controls-section collapsed" id="controlsPanel">
+        <div class="main-content">
+            <aside class="controls-section collapsed" id="controlsPanel">
             <button class="mobile-toggle" id="mobileToggle" onclick="toggleControls()">
                 <span>Chart Options</span>
                 <span id="toggleIcon">▼</span>
@@ -616,9 +627,25 @@
                 </div>
             </div>
             </div>
-        </div>
+            </aside>
 
-        <div class="chart-container">
+            <main class="charts">
+                <div class="stats-container">
+                    <div class="stat-box">
+                        <div class="stat-label">Current ISMI</div>
+                        <div class="stat-value" id="current-ism">--</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Positive Momentum</div>
+                        <div class="stat-value" id="current-pos">--</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Negative Momentum</div>
+                        <div class="stat-value" id="current-neg">--</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
             <div class="chart-title">ISMI and Its Components</div>
 
             <div class="date-range-control">
@@ -653,13 +680,15 @@
             </div>
         </div>
 
-        <div class="download-buttons">
-            <button id="download-full-btn" class="download-btn">
-                Download Full Dataset (Excel)
-            </button>
-            <button id="download-view-btn" class="download-btn">
-                Download Current View (CSV)
-            </button>
+                <div class="download-buttons">
+                    <button id="download-full-btn" class="download-btn">
+                        Download Full Dataset (Excel)
+                    </button>
+                    <button id="download-view-btn" class="download-btn">
+                        Download Current View (CSV)
+                    </button>
+                </div>
+            </main>
         </div>
 
         <footer>
