@@ -478,6 +478,17 @@
                 font-size: 15px;
                 width: 100%;
             }
+
+            /* Stack chart title and PCE checkbox on mobile */
+            .chart-container > div:first-child {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 12px;
+            }
+
+            .chart-container .checkbox-control {
+                width: 100%;
+            }
         }
 
         /* Extra small phones */
@@ -544,24 +555,6 @@
                 </div>
 
                 <div class="control-group">
-                    <label for="ar-select">AR Model</label>
-                    <select id="ar-select">
-                        <option value="1" selected>AR(1)</option>
-                        <option value="3">AR(3)</option>
-                        <option value="12">AR(12)</option>
-                    </select>
-                </div>
-
-                <div class="control-group">
-                    <label for="k-select">Run Length (k)</label>
-                    <select id="k-select">
-                        <option value="2">k=2 (2 consecutive months)</option>
-                        <option value="3" selected>k=3 (3 consecutive months)</option>
-                        <option value="4">k=4 (4 consecutive months)</option>
-                    </select>
-                </div>
-
-                <div class="control-group">
                     <label for="series-select">Series to Display</label>
                     <select id="series-select">
                         <option value="diff" selected>ISMI</option>
@@ -569,19 +562,41 @@
                         <option value="components_only">Components Only</option>
                     </select>
                 </div>
-
-                <div class="control-group">
-                    <div class="checkbox-control">
-                        <input type="checkbox" id="show-pce" />
-                        <label for="show-pce">Show YoY PCE Inflation</label>
-                    </div>
-                </div>
             </div>
 
-            <div style="margin-top: 20px; padding: 12px; background: #f8f9fa; border-left: 3px solid #004C97; border-radius: 3px;">
-                <p style="margin: 0; font-size: 13px; color: #555; line-height: 1.6;">
-                    <strong style="color: #004C97;">Note:</strong> The baseline specification in the paper uses AR(1) with k=3 (3 consecutive months).
-                </p>
+            <div style="margin-top: 20px; border-top: 1px solid #e0e0e0; padding-top: 15px;">
+                <button id="advanced-toggle" style="width: 100%; padding: 10px; background: #f8f9fa; border: 1px solid #ccc; border-radius: 3px; font-size: 13px; font-weight: 600; color: #555; cursor: pointer; text-align: left; display: flex; justify-content: space-between; align-items: center;">
+                    <span>Advanced Options</span>
+                    <span id="advanced-icon">▼</span>
+                </button>
+
+                <div id="advanced-content" style="display: none; margin-top: 15px;">
+                    <div style="padding: 12px; background: #f8f9fa; border-left: 3px solid #004C97; border-radius: 3px; margin-bottom: 15px;">
+                        <p style="margin: 0; font-size: 13px; color: #555; line-height: 1.6;">
+                            <strong style="color: #004C97;">Note:</strong> The baseline specification in the paper uses AR(1) with k=3 (3 consecutive months).
+                        </p>
+                    </div>
+
+                    <div class="controls-grid">
+                        <div class="control-group">
+                            <label for="ar-select">AR Model</label>
+                            <select id="ar-select">
+                                <option value="1" selected>AR(1)</option>
+                                <option value="3">AR(3)</option>
+                                <option value="12">AR(12)</option>
+                            </select>
+                        </div>
+
+                        <div class="control-group">
+                            <label for="k-select">Run Length (k)</label>
+                            <select id="k-select">
+                                <option value="2">k=2 (2 consecutive months)</option>
+                                <option value="3" selected>k=3 (3 consecutive months)</option>
+                                <option value="4">k=4 (4 consecutive months)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <button id="reset-btn" style="margin-top: 15px; width: 100%; padding: 10px; background: #6c757d; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; font-weight: 600; transition: background 0.2s;">
@@ -591,7 +606,13 @@
         </div>
 
         <div class="chart-container">
-            <div class="chart-title">ISMI and Its Components</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div class="chart-title" style="margin-bottom: 0;">ISMI and Its Components</div>
+                <div class="checkbox-control" style="background: #f8f9fa; padding: 8px 12px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                    <input type="checkbox" id="show-pce" />
+                    <label for="show-pce" style="font-size: 13px; color: #555;">Show YoY PCE Inflation</label>
+                </div>
+            </div>
 
             <div class="date-range-control">
                 <div class="date-range-label">Date Range</div>
@@ -646,6 +667,20 @@
                 icon.textContent = '▲';
             } else {
                 panel.classList.add('collapsed');
+                icon.textContent = '▼';
+            }
+        }
+
+        // Advanced options toggle
+        function toggleAdvanced() {
+            const content = document.getElementById('advanced-content');
+            const icon = document.getElementById('advanced-icon');
+
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.textContent = '▲';
+            } else {
+                content.style.display = 'none';
                 icon.textContent = '▼';
             }
         }
@@ -803,8 +838,8 @@
                 datasets.push({
                     label: 'ISMI',
                     data: dates.map((date, i) => ({ x: date, y: ismi[i] })),
-                    borderColor: '#000000',
-                    backgroundColor: '#000000',
+                    borderColor: '#001f3f',
+                    backgroundColor: '#001f3f',
                     borderWidth: 2.5,
                     fill: false,
                     tension: 0.1,
@@ -892,6 +927,9 @@
                                 text: 'ISMI (Share)',
                                 font: { size: 12 }
                             },
+                            ticks: {
+                                font: { size: window.innerWidth > 768 ? 13 : 11 }
+                            },
                             grid: {
                                 color: function(context) {
                                     if (context.tick.value === 0) {
@@ -914,6 +952,9 @@
                                 display: true,
                                 text: 'YoY PCE Inflation (%)',
                                 font: { size: 12 }
+                            },
+                            ticks: {
+                                font: { size: window.innerWidth > 768 ? 13 : 11 }
                             },
                             grid: { display: false },
                             border: { color: '#d0d0d0' }
@@ -973,6 +1014,9 @@
                                 text: 'ISMI',
                                 font: { size: 12 }
                             },
+                            ticks: {
+                                font: { size: window.innerWidth > 768 ? 13 : 11 }
+                            },
                             grid: {
                                 color: function(context) {
                                     if (context.tick.value === 0) {
@@ -1021,6 +1065,7 @@
         document.getElementById('series-select').addEventListener('change', updateCharts);
         document.getElementById('show-pce').addEventListener('change', updateCharts);
         document.getElementById('reset-btn').addEventListener('click', resetToBaseline);
+        document.getElementById('advanced-toggle').addEventListener('click', toggleAdvanced);
 
         // Download full dataset button - downloads Excel file from GitHub
         document.getElementById('download-full-btn').addEventListener('click', () => {
