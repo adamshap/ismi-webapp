@@ -283,6 +283,10 @@
             transition: background 0.2s;
         }
 
+        #reset-btn:hover {
+            background: #5a6268 !important;
+        }
+
         footer {
             margin-top: 60px;
             padding-top: 30px;
@@ -579,6 +583,10 @@
                     <strong style="color: #004C97;">Note:</strong> The baseline specification in the paper uses AR(1) with k=3 (3 consecutive months).
                 </p>
             </div>
+
+            <button id="reset-btn" style="margin-top: 15px; width: 100%; padding: 10px; background: #6c757d; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; font-weight: 600; transition: background 0.2s;">
+                Reset to Baseline
+            </button>
             </div>
         </div>
 
@@ -884,7 +892,20 @@
                                 text: 'ISMI (Share)',
                                 font: { size: 12 }
                             },
-                            grid: { color: '#e5e5e5' },
+                            grid: {
+                                color: function(context) {
+                                    if (context.tick.value === 0) {
+                                        return '#000000';
+                                    }
+                                    return '#e5e5e5';
+                                },
+                                lineWidth: function(context) {
+                                    if (context.tick.value === 0) {
+                                        return 2;
+                                    }
+                                    return 1;
+                                }
+                            },
                             border: { color: '#d0d0d0' }
                         },
                         y2: showPCE ? {
@@ -952,12 +973,45 @@
                                 text: 'ISMI',
                                 font: { size: 12 }
                             },
-                            grid: { color: '#e5e5e5' },
+                            grid: {
+                                color: function(context) {
+                                    if (context.tick.value === 0) {
+                                        return '#000000';
+                                    }
+                                    return '#e5e5e5';
+                                },
+                                lineWidth: function(context) {
+                                    if (context.tick.value === 0) {
+                                        return 2;
+                                    }
+                                    return 1;
+                                }
+                            },
                             border: { color: '#d0d0d0' }
                         }
                     }
                 }
             });
+        }
+
+        // Reset to baseline function
+        function resetToBaseline() {
+            // Reset all controls to baseline settings
+            document.getElementById('inflation-series-select').value = '';  // Headline
+            document.getElementById('ar-select').value = '1';  // AR(1)
+            document.getElementById('k-select').value = '3';  // k=3
+            document.getElementById('series-select').value = 'diff';  // ISMI only
+            document.getElementById('show-pce').checked = false;  // PCE off
+
+            // Reset date range to full range
+            const maxIdx = allData.length - 1;
+            timeseriesStartIdx = 0;
+            timeseriesEndIdx = maxIdx;
+            document.getElementById('timeseries-start-slider').value = 0;
+            document.getElementById('timeseries-end-slider').value = maxIdx;
+
+            updateDateDisplays();
+            updateCharts();
         }
 
         // Event listeners for controls
@@ -966,6 +1020,7 @@
         document.getElementById('inflation-series-select').addEventListener('change', updateCharts);
         document.getElementById('series-select').addEventListener('change', updateCharts);
         document.getElementById('show-pce').addEventListener('change', updateCharts);
+        document.getElementById('reset-btn').addEventListener('click', resetToBaseline);
 
         // Download full dataset button - downloads Excel file from GitHub
         document.getElementById('download-full-btn').addEventListener('click', () => {
