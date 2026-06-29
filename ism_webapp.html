@@ -262,6 +262,27 @@
             color: #004C97;
         }
 
+        .download-buttons {
+            margin: 40px 0;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .download-btn {
+            padding: 12px 30px;
+            background: #004C97;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
         footer {
             margin-top: 60px;
             padding-top: 30px;
@@ -441,10 +462,17 @@
                 padding: 15px;
             }
 
+            .download-buttons {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 0 15px;
+                gap: 12px;
+            }
+
             .download-btn {
                 padding: 15px 20px;
                 font-size: 15px;
-                margin-top: 15px;
+                width: 100%;
             }
         }
 
@@ -534,6 +562,7 @@
                     <select id="series-select">
                         <option value="diff" selected>ISMI</option>
                         <option value="components">ISMI with Components</option>
+                        <option value="components_only">Components Only</option>
                     </select>
                 </div>
 
@@ -543,6 +572,12 @@
                         <label for="show-pce">Show YoY PCE Inflation</label>
                     </div>
                 </div>
+            </div>
+
+            <div style="margin-top: 20px; padding: 12px; background: #f8f9fa; border-left: 3px solid #004C97; border-radius: 3px;">
+                <p style="margin: 0; font-size: 13px; color: #555; line-height: 1.6;">
+                    <strong style="color: #004C97;">Note:</strong> The baseline specification in the paper uses AR(1) with k=3 (3 consecutive months).
+                </p>
             </div>
             </div>
         </div>
@@ -576,11 +611,11 @@
             </div>
         </div>
 
-        <div style="margin: 40px 0; text-align: center;">
-            <button id="download-full-btn" style="padding: 12px 30px; background: #004C97; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; font-weight: 600; transition: background 0.2s; margin-right: 15px;">
+        <div class="download-buttons">
+            <button id="download-full-btn" class="download-btn">
                 Download Full Dataset (Excel)
             </button>
-            <button id="download-view-btn" style="padding: 12px 30px; background: #004C97; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer; font-weight: 600; transition: background 0.2s;">
+            <button id="download-view-btn" class="download-btn">
                 Download Current View (CSV)
             </button>
         </div>
@@ -727,8 +762,8 @@
             // Time series chart datasets
             const datasets = [];
 
-            if (series === 'components') {
-                // Show positive, negative, and ISMI
+            if (series === 'components' || series === 'components_only') {
+                // Show positive and negative components
                 datasets.push({
                     label: 'Positive Momentum',
                     data: dates.map((date, i) => ({ x: date, y: ismiPos[i] })),
@@ -755,19 +790,21 @@
                 });
             }
 
-            // Always show ISMI line
-            datasets.push({
-                label: 'ISMI',
-                data: dates.map((date, i) => ({ x: date, y: ismi[i] })),
-                borderColor: '#000000',
-                backgroundColor: '#000000',
-                borderWidth: 2.5,
-                fill: false,
-                tension: 0.1,
-                yAxisID: 'y',
-                pointRadius: 0,
-                pointHoverRadius: 4
-            });
+            // Show ISMI line only if not "components_only"
+            if (series !== 'components_only') {
+                datasets.push({
+                    label: 'ISMI',
+                    data: dates.map((date, i) => ({ x: date, y: ismi[i] })),
+                    borderColor: '#000000',
+                    backgroundColor: '#000000',
+                    borderWidth: 2.5,
+                    fill: false,
+                    tension: 0.1,
+                    yAxisID: 'y',
+                    pointRadius: 0,
+                    pointHoverRadius: 4
+                });
+            }
 
             // Add PCE if checkbox is checked
             if (showPCE) {
@@ -809,6 +846,12 @@
                         },
                         tooltip: {
                             callbacks: {
+                                title: function(context) {
+                                    // Format date as "MMM YYYY" (e.g., "Jan 2024")
+                                    const date = new Date(context[0].parsed.x);
+                                    const options = { year: 'numeric', month: 'short' };
+                                    return date.toLocaleDateString('en-US', options);
+                                },
                                 label: function(context) {
                                     let label = context.dataset.label || '';
                                     if (label) label += ': ';
@@ -883,6 +926,10 @@
                         legend: { display: false },
                         tooltip: {
                             callbacks: {
+                                title: function(context) {
+                                    // Show date label as is (already in MMM YYYY format from CSV)
+                                    return context[0].label;
+                                },
                                 label: function(context) {
                                     return 'ISMI: ' + context.parsed.y.toFixed(3);
                                 }
