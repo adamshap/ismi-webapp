@@ -488,9 +488,9 @@
                 width: 100%;
             }
 
-            /* Move PCE checkbox to top left on mobile */
+            /* Move PCE checkbox to bottom left on mobile */
             .chart-wrapper > div {
-                top: 10px !important;
+                bottom: 40px !important;
                 right: auto !important;
                 left: 10px !important;
             }
@@ -637,7 +637,7 @@
 
             <div class="chart-wrapper">
                 <canvas id="timeSeriesChart"></canvas>
-                <div style="position: absolute; top: 60px; right: 40px; z-index: 10;">
+                <div style="position: absolute; bottom: 50px; right: 40px; z-index: 10;">
                     <div class="checkbox-control" style="background: rgba(255,255,255,0.95); padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                         <input type="checkbox" id="show-pce" />
                         <label for="show-pce" style="font-size: 12px; color: #555; font-weight: 500;">Show YoY PCE Inflation</label>
