@@ -7,7 +7,8 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>ISMI - Inflation Shock Momentum Index</title>
-    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -217,15 +218,19 @@
             user-select: none;
         }
 
-        #timeSeriesChart, #barChart {
+        .chart-wrapper {
+            position: relative;
             width: 100%;
             height: 500px;
+        }
+
+        .chart-wrapper canvas {
             border: 1px solid #e0e0e0;
             border-radius: 4px;
             background: white;
         }
 
-        #barChart {
+        .chart-wrapper.bar-chart {
             height: 400px;
         }
 
@@ -415,8 +420,12 @@
                 border: none;
             }
 
-            #timeSeriesChart, #barChart {
+            .chart-wrapper {
                 height: 350px;
+            }
+
+            .chart-wrapper.bar-chart {
+                height: 300px;
             }
 
             .chart-title {
@@ -445,8 +454,12 @@
                 font-size: 20px;
             }
 
-            #timeSeriesChart, #barChart {
+            .chart-wrapper {
                 height: 300px;
+            }
+
+            .chart-wrapper.bar-chart {
+                height: 250px;
             }
         }
     </style>
@@ -551,12 +564,16 @@
                 </div>
             </div>
 
-            <div id="timeSeriesChart"></div>
+            <div class="chart-wrapper">
+                <canvas id="timeSeriesChart"></canvas>
+            </div>
         </div>
 
         <div class="chart-container">
             <div class="chart-title">ISMI over the Last 24 Months</div>
-            <div id="barChart"></div>
+            <div class="chart-wrapper bar-chart">
+                <canvas id="barChart"></canvas>
+            </div>
         </div>
 
         <div style="margin: 40px 0; text-align: center;">
@@ -605,6 +622,8 @@
         let allData = [];
         let timeseriesStartIdx = 0;
         let timeseriesEndIdx = 0;
+        let timeSeriesChartInstance = null;
+        let barChartInstance = null;
 
         async function loadData() {
             try {
@@ -683,18 +702,6 @@
             const negCol = `ismi_${seriesName}_negative_ar${ar}_k${k}`;
             const diffCol = `ismi_${seriesName}_ar${ar}_k${k}`;
 
-            // Debug: Check if columns exist
-            if (allData.length > 0) {
-                const availableCols = Object.keys(allData[0]);
-                console.log('Looking for columns:', {posCol, negCol, diffCol});
-                console.log('Column exists?', {
-                    pos: availableCols.includes(posCol),
-                    neg: availableCols.includes(negCol),
-                    diff: availableCols.includes(diffCol)
-                });
-                console.log('All available columns:', availableCols);
-            }
-
             // Get filtered data for time series
             const timeseriesData = allData.slice(timeseriesStartIdx, timeseriesEndIdx + 1);
             const dates = timeseriesData.map(d => d.date);
@@ -703,145 +710,152 @@
             const ismiNeg = timeseriesData.map(d => parseFloat(d[negCol]));
             const pce = timeseriesData.map(d => parseFloat(d['pce_yoy']));
 
-            console.log('Sample data check:', {
-                diffCol: diffCol,
-                firstRow: allData[0],
-                hasColumn: diffCol in allData[0],
-                sampleValue: allData[0][diffCol],
-                parsedValue: parseFloat(allData[0][diffCol])
-            });
-            console.log('Sample ISMI values:', ismi.slice(0, 5));
-            console.log('Data exists?', {dates: dates.length, ismi: ismi.length, hasValues: ismi.some(v => !isNaN(v) && v !== 0)});
-
             // Update stats
             const latest = allData[allData.length - 1];
             document.getElementById('current-ism').textContent = parseFloat(latest[diffCol]).toFixed(3);
             document.getElementById('current-pos').textContent = parseFloat(latest[posCol]).toFixed(3);
             document.getElementById('current-neg').textContent = parseFloat(latest[negCol]).toFixed(3);
 
-            // Time series chart
-            let traces = [];
-
-            if (series === 'diff') {
-                traces = [{
-                    x: dates,
-                    y: ismi,
-                    name: 'ISMI',
-                    type: 'scatter',
-                    mode: 'lines',
-                    line: { color: '#000000', width: 2.5 },
-                    yaxis: 'y',
-                    hovertemplate: '<b>%{x}</b><br>ISMI: %{y:.3f}<extra></extra>'
-                }];
-            } else if (series === 'components') {
-                traces = [
-                    {
-                        x: dates,
-                        y: ismiPos,
-                        name: 'Positive Momentum',
-                        type: 'scatter',
-                        mode: 'lines',
-                        line: { color: '#ffb3ba', width: 2 },
-                        yaxis: 'y',
-                        hovertemplate: '<b>%{x}</b><br>Positive: %{y:.3f}<extra></extra>'
-                    },
-                    {
-                        x: dates,
-                        y: ismiNeg,
-                        name: 'Negative Momentum',
-                        type: 'scatter',
-                        mode: 'lines',
-                        line: { color: '#999999', width: 2 },
-                        yaxis: 'y',
-                        hovertemplate: '<b>%{x}</b><br>Negative: %{y:.3f}<extra></extra>'
-                    },
-                    {
-                        x: dates,
-                        y: ismi,
-                        name: 'ISMI',
-                        type: 'scatter',
-                        mode: 'lines',
-                        line: { color: '#000000', width: 2.5 },
-                        yaxis: 'y',
-                        hovertemplate: '<b>%{x}</b><br>ISMI: %{y:.3f}<extra></extra>'
-                    }
-                ];
+            // Destroy existing charts
+            if (timeSeriesChartInstance) {
+                timeSeriesChartInstance.destroy();
+            }
+            if (barChartInstance) {
+                barChartInstance.destroy();
             }
 
-            // Add PCE trace if checkbox is checked
-            if (showPCE) {
-                traces.push({
-                    x: dates,
-                    y: pce,
-                    name: 'YoY PCE Inflation',
-                    type: 'scatter',
-                    mode: 'lines',
-                    line: { color: '#E74C3C', width: 2, dash: 'dot' },
-                    yaxis: 'y2',
-                    hovertemplate: '<b>%{x}</b><br>PCE: %{y:.2f}%<extra></extra>'
+            // Time series chart datasets
+            const datasets = [];
+
+            if (series === 'components') {
+                // Show positive, negative, and ISMI
+                datasets.push({
+                    label: 'Positive Momentum',
+                    data: dates.map((date, i) => ({ x: date, y: ismiPos[i] })),
+                    borderColor: '#ffb3ba',
+                    backgroundColor: '#ffb3ba',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.1,
+                    yAxisID: 'y',
+                    pointRadius: 0,
+                    pointHoverRadius: 4
+                });
+                datasets.push({
+                    label: 'Negative Momentum',
+                    data: dates.map((date, i) => ({ x: date, y: ismiNeg[i] })),
+                    borderColor: '#999999',
+                    backgroundColor: '#999999',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.1,
+                    yAxisID: 'y',
+                    pointRadius: 0,
+                    pointHoverRadius: 4
                 });
             }
 
-            // Zero line
-            traces.push({
-                x: dates,
-                y: Array(dates.length).fill(0),
-                name: 'Zero',
-                type: 'scatter',
-                mode: 'lines',
-                line: { color: '#999', width: 1, dash: 'dash' },
-                hoverinfo: 'skip',
-                showlegend: false
+            // Always show ISMI line
+            datasets.push({
+                label: 'ISMI',
+                data: dates.map((date, i) => ({ x: date, y: ismi[i] })),
+                borderColor: '#000000',
+                backgroundColor: '#000000',
+                borderWidth: 2.5,
+                fill: false,
+                tension: 0.1,
+                yAxisID: 'y',
+                pointRadius: 0,
+                pointHoverRadius: 4
             });
 
-            const timeSeriesLayout = {
-                font: { family: "'Helvetica Neue', Helvetica, Arial, sans-serif", size: 12, color: '#333' },
-                paper_bgcolor: 'white',
-                plot_bgcolor: 'white',
-                margin: { t: 20, r: showPCE ? 80 : 40, b: 60, l: 70 },
-                xaxis: {
-                    title: '',
-                    gridcolor: '#e5e5e5',
-                    showline: true,
-                    linecolor: '#d0d0d0',
-                    linewidth: 1
-                },
-                yaxis: {
-                    title: 'ISMI (Share)',
-                    gridcolor: '#e5e5e5',
-                    showline: true,
-                    linecolor: '#d0d0d0',
-                    linewidth: 1,
-                    zeroline: false
-                },
-                hovermode: 'x unified',
-                showlegend: true,
-                legend: {
-                    x: 0.02,
-                    y: 0.98,
-                    bgcolor: 'rgba(255,255,255,0.95)',
-                    bordercolor: '#d0d0d0',
-                    borderwidth: 1
-                }
-            };
-
-            // Add yaxis2 only if showing PCE
+            // Add PCE if checkbox is checked
             if (showPCE) {
-                timeSeriesLayout.yaxis2 = {
-                    title: 'YoY PCE Inflation (%)',
-                    overlaying: 'y',
-                    side: 'right',
-                    gridcolor: 'transparent',
-                    showline: true,
-                    linecolor: '#d0d0d0',
-                    linewidth: 1
-                };
+                datasets.push({
+                    label: 'YoY PCE Inflation',
+                    data: dates.map((date, i) => ({ x: date, y: pce[i] })),
+                    borderColor: '#E74C3C',
+                    backgroundColor: '#E74C3C',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    fill: false,
+                    tension: 0.1,
+                    yAxisID: 'y2',
+                    pointRadius: 0,
+                    pointHoverRadius: 4
+                });
             }
 
-            Plotly.newPlot('timeSeriesChart', traces, timeSeriesLayout, {
-                responsive: true,
-                displaylogo: false,
-                modeBarButtonsToRemove: ['lasso2d', 'select2d']
+            // Create time series chart
+            const timeSeriesCtx = document.getElementById('timeSeriesChart').getContext('2d');
+            timeSeriesChartInstance = new Chart(timeSeriesCtx, {
+                type: 'line',
+                data: { datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: false,
+                                boxWidth: 40,
+                                font: { size: 12 }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) label += ': ';
+                                    if (context.parsed.y !== null) {
+                                        if (context.dataset.yAxisID === 'y2') {
+                                            label += context.parsed.y.toFixed(2) + '%';
+                                        } else {
+                                            label += context.parsed.y.toFixed(3);
+                                        }
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'month',
+                                displayFormats: { month: 'MMM yyyy' }
+                            },
+                            grid: { color: '#e5e5e5' },
+                            border: { color: '#d0d0d0' }
+                        },
+                        y: {
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'ISMI (Share)',
+                                font: { size: 12 }
+                            },
+                            grid: { color: '#e5e5e5' },
+                            border: { color: '#d0d0d0' }
+                        },
+                        y2: showPCE ? {
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'YoY PCE Inflation (%)',
+                                font: { size: 12 }
+                            },
+                            grid: { display: false },
+                            border: { color: '#d0d0d0' }
+                        } : undefined
+                    }
+                }
             });
 
             // Bar chart (always last 24 months)
@@ -850,47 +864,52 @@
             const barValues = barData.map(d => parseFloat(d[diffCol]));
             const barColors = barValues.map(v => v >= 0 ? '#5DADE2' : '#1F618D');
 
-            const barTrace = {
-                x: barDates,
-                y: barValues,
+            const barCtx = document.getElementById('barChart').getContext('2d');
+            barChartInstance = new Chart(barCtx, {
                 type: 'bar',
-                marker: {
-                    color: barColors,
-                    line: { width: 0 }
+                data: {
+                    labels: barDates,
+                    datasets: [{
+                        label: 'ISMI',
+                        data: barValues,
+                        backgroundColor: barColors,
+                        borderWidth: 0
+                    }]
                 },
-                hovertemplate: '<b>%{x}</b><br>ISMI: %{y:.3f}<extra></extra>'
-            };
-
-            const barLayout = {
-                font: { family: "'Helvetica Neue', Helvetica, Arial, sans-serif", size: 12, color: '#333' },
-                paper_bgcolor: 'white',
-                plot_bgcolor: 'white',
-                margin: { t: 20, r: 40, b: 80, l: 70 },
-                xaxis: {
-                    title: '',
-                    gridcolor: '#e5e5e5',
-                    showline: true,
-                    linecolor: '#d0d0d0',
-                    linewidth: 1,
-                    tickangle: -45
-                },
-                yaxis: {
-                    title: 'ISMI',
-                    gridcolor: '#e5e5e5',
-                    showline: true,
-                    linecolor: '#d0d0d0',
-                    linewidth: 1,
-                    zeroline: true,
-                    zerolinecolor: '#999',
-                    zerolinewidth: 1.5
-                },
-                showlegend: false
-            };
-
-            Plotly.newPlot('barChart', [barTrace], barLayout, {
-                responsive: true,
-                displaylogo: false,
-                modeBarButtonsToRemove: ['lasso2d', 'select2d']
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'ISMI: ' + context.parsed.y.toFixed(3);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: '#e5e5e5' },
+                            border: { color: '#d0d0d0' },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45,
+                                font: { size: 10 }
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'ISMI',
+                                font: { size: 12 }
+                            },
+                            grid: { color: '#e5e5e5' },
+                            border: { color: '#d0d0d0' }
+                        }
+                    }
+                }
             });
         }
 
