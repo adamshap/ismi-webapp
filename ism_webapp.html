@@ -439,6 +439,10 @@
             border-color: #004C97;
         }
 
+        .chart-type-toggle {
+            display: none;
+        }
+
         .share-chart-btn-prominent {
             display: flex;
             align-items: center;
@@ -683,6 +687,40 @@
                 margin-top: 18px;
             }
 
+            .bar-chart-container {
+                display: none;
+            }
+
+            .chart-type-toggle {
+                display: flex;
+                gap: 0;
+                margin: 0 0 12px 0;
+                border: 1px solid #004C97;
+                border-radius: 4px;
+                overflow: hidden;
+            }
+
+            .chart-type-toggle button {
+                flex: 1;
+                padding: 10px;
+                background: white;
+                color: #004C97;
+                border: none;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: background 0.15s;
+            }
+
+            .chart-type-toggle button + button {
+                border-left: 1px solid #004C97;
+            }
+
+            .chart-type-toggle button.active {
+                background: #004C97;
+                color: white;
+            }
+
             .description {
                 position: relative;
                 max-height: 4.2em;
@@ -897,6 +935,7 @@
                 <div class="date-range-label">Date Range</div>
                 <div class="preset-chips">
                     <button type="button" onclick="setDateRange(1)">1Y</button>
+                    <button type="button" onclick="setDateRange(2)">2Y</button>
                     <button type="button" onclick="setDateRange(3)">3Y</button>
                     <button type="button" onclick="setDateRange(5)">5Y</button>
                     <button type="button" onclick="setDateRange(10)">10Y</button>
@@ -914,6 +953,11 @@
                 </div>
             </div>
 
+            <div class="chart-type-toggle">
+                <button type="button" class="active" data-type="line" onclick="setChartType('line')">Line</button>
+                <button type="button" data-type="bar" onclick="setChartType('bar')">Bar</button>
+            </div>
+
             <div class="chart-wrapper">
                 <canvas id="timeSeriesChart"></canvas>
             </div>
@@ -923,7 +967,7 @@
             </button>
         </div>
 
-        <div class="chart-container">
+        <div class="chart-container bar-chart-container">
             <div class="chart-title">ISMI over the Last 24 Months</div>
             <div class="chart-wrapper bar-chart">
                 <canvas id="barChart"></canvas>
@@ -999,6 +1043,7 @@
         window.addEventListener('resize', checkScreenSize);
 
         let allData = [];
+        let chartType = 'line';
         let timeseriesStartIdx = 0;
         let timeseriesEndIdx = 0;
         let timeSeriesChartInstance = null;
@@ -1211,10 +1256,25 @@
                 });
             }
 
+            // Bar mode: replace datasets with a single bar dataset of the main ISMI series,
+            // colored by sign to match the desktop "Last 24 Months" chart.
+            if (chartType === 'bar') {
+                const barColors = ismi.map(v => v >= 0 ? '#5DADE2' : '#1F618D');
+                datasets.length = 0;
+                datasets.push({
+                    label: 'ISMI',
+                    data: dates.map((date, i) => ({ x: date, y: ismi[i] })),
+                    backgroundColor: barColors,
+                    borderColor: barColors,
+                    borderWidth: 0,
+                    yAxisID: 'y'
+                });
+            }
+
             // Create time series chart
             const timeSeriesCtx = document.getElementById('timeSeriesChart').getContext('2d');
             timeSeriesChartInstance = new Chart(timeSeriesCtx, {
-                type: 'line',
+                type: chartType === 'bar' ? 'bar' : 'line',
                 data: { datasets },
                 options: {
                     responsive: true,
@@ -1318,6 +1378,16 @@
             document.getElementById('current-ism').textContent = parseFloat(latest[diffCol]).toFixed(3);
             document.getElementById('current-pos').textContent = parseFloat(latest[posCol]).toFixed(3);
             document.getElementById('current-neg').textContent = parseFloat(latest[negCol]).toFixed(3);
+
+            // Skip bar chart if its container is hidden (e.g., mobile)
+            const barContainer = document.querySelector('.bar-chart-container');
+            if (barContainer && window.getComputedStyle(barContainer).display === 'none') {
+                if (barChartInstance) {
+                    barChartInstance.destroy();
+                    barChartInstance = null;
+                }
+                return;
+            }
 
             if (barChartInstance) {
                 barChartInstance.destroy();
@@ -1491,6 +1561,14 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        }
+
+        function setChartType(type) {
+            chartType = type;
+            document.querySelectorAll('.chart-type-toggle button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.type === type);
+            });
+            updateTimeSeriesChart();
         }
 
         function setDateRange(years) {
