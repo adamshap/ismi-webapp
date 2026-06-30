@@ -927,7 +927,7 @@
                 </div>
 
                 <div class="chart-container">
-            <div class="chart-title">ISMI and Its Components</div>
+            <div class="chart-title" id="chartTitle">Inflation Shock Momentum Index (ISMI)</div>
 
             <div class="date-range-control">
                 <div class="date-range-label">Date Range</div>
@@ -1141,6 +1141,22 @@
             const compareSeriesToggle = document.getElementById('compare-series-toggle').checked;
             const compareSeries = document.getElementById('compare-series-select').value;
 
+            // Update chart title — baseline = headline + AR(1) + k=3
+            const titleParts = [];
+            if (inflationSeries !== '') titleParts.push(seriesLabels[inflationSeries]);
+            if (ar !== '1') titleParts.push(`AR(${ar})`);
+            if (k !== '3') titleParts.push(`k=${k}`);
+            const baseTitle = 'Inflation Shock Momentum Index (ISMI)';
+            const chartTitleEl = document.getElementById('chartTitle');
+            if (chartTitleEl) {
+                chartTitleEl.textContent = titleParts.length === 0
+                    ? baseTitle
+                    : `${baseTitle} — ${titleParts.join(', ')}`;
+            }
+
+            // Legend is only useful when there are multiple lines to distinguish
+            const showLegend = compareSeriesToggle || series === 'components' || series === 'components_only' || showPCE;
+
             let compareDiffCol = null;
             let compareIsmi = null;
             if (compareSeriesToggle) {
@@ -1278,6 +1294,7 @@
                     },
                     plugins: {
                         legend: {
+                            display: showLegend,
                             position: 'top',
                             labels: {
                                 usePointStyle: false,
