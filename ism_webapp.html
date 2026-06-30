@@ -131,8 +131,120 @@
             box-shadow: 0 0 0 2px rgba(0, 76, 151, 0.1);
         }
 
-        button:hover {
-            background: #003366 !important;
+        .download-btn:hover {
+            background: #003366;
+        }
+
+        .download-btn.sidebar {
+            width: 100%;
+            padding: 10px;
+        }
+
+        .subtitle a {
+            color: #004C97;
+            text-decoration: none;
+            border-bottom: 1px solid #004C97;
+        }
+
+        .sidebar-section {
+            margin-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            padding-top: 20px;
+        }
+
+        .sidebar-section--tight {
+            padding-top: 15px;
+        }
+
+        .sidebar-download-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 0;
+        }
+
+        .advanced-toggle {
+            width: 100%;
+            padding: 10px;
+            background: #f8f9fa;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+            cursor: pointer;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .advanced-content {
+            margin-top: 15px;
+        }
+
+        .advanced-content.hidden {
+            display: none;
+        }
+
+        .advanced-note {
+            padding: 12px;
+            background: #f8f9fa;
+            border-left: 3px solid #004C97;
+            border-radius: 3px;
+            margin-bottom: 15px;
+        }
+
+        .advanced-note p {
+            margin: 0;
+            font-size: 13px;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .advanced-note strong {
+            color: #004C97;
+        }
+
+        .reset-btn {
+            margin-top: 15px;
+            width: 100%;
+            padding: 8px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            font-size: 13px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .compare-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .compare-section .checkbox-control {
+            margin-bottom: 15px;
+        }
+
+        .compare-section .checkbox-control:last-child {
+            margin-bottom: 0;
+        }
+
+        .compare-dropdown {
+            margin-top: 12px;
+        }
+
+        .compare-dropdown.hidden {
+            display: none;
+        }
+
+        .date-label-inline {
+            font-size: 11px;
+            color: #666;
         }
 
         .chart-container {
@@ -327,12 +439,16 @@
             border-color: #004C97;
         }
 
-        .share-chart-btn {
+        .chart-actions {
             display: none;
         }
 
-        #reset-btn:hover {
-            background: #5a6268 !important;
+        .description-more-btn {
+            display: none;
+        }
+
+        .reset-btn:hover {
+            background: #5a6268;
         }
 
         footer {
@@ -390,7 +506,7 @@
                 width: 100%;
                 padding: 15px;
                 order: 2;
-                position: sticky;
+                top: auto;
                 bottom: 0;
                 z-index: 100;
                 max-height: 70vh;
@@ -408,7 +524,6 @@
             }
 
             .mobile-toggle {
-                display: block;
                 width: 100%;
                 padding: 15px;
                 background: #004C97;
@@ -539,8 +654,66 @@
                 font-size: 14px;
             }
 
-            .share-chart-btn {
+            .chart-actions {
+                display: flex;
+                gap: 8px;
+                margin: -10px 0 14px 0;
+            }
+
+            .chart-actions button {
+                flex: 1;
+                padding: 10px 8px;
+                background: white;
+                color: #004C97;
+                border: 1px solid #004C97;
+                border-radius: 4px;
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+            }
+
+            .chart-actions button:active {
+                background: #004C97;
+                color: white;
+            }
+
+            .description {
+                position: relative;
+                max-height: 4.2em;
+                overflow: hidden;
+                margin: 15px 0 20px 0;
+            }
+
+            .description.expanded {
+                max-height: none;
+            }
+
+            .description::after {
+                content: '';
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: 1.5em;
+                background: linear-gradient(transparent, #f8f9fa);
+                pointer-events: none;
+            }
+
+            .description.expanded::after {
+                display: none;
+            }
+
+            .description-more-btn {
                 display: block;
+                margin: -10px 0 20px 0;
+                padding: 6px 12px;
+                background: none;
+                border: none;
+                color: #004C97;
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+                text-decoration: underline;
             }
 
             .download-buttons {
@@ -577,12 +750,13 @@
     <div class="container">
         <header>
             <h1>Inflation Shock Momentum Index (ISMI)</h1>
-            <div class="subtitle">Lansing and Shapiro (2026) | <a href="https://www.frbsf.org/wp-content/uploads/wp2026-10.pdf" target="_blank" style="color: #004C97; text-decoration: none; border-bottom: 1px solid #004C97;">Working Paper</a></div>
+            <div class="subtitle">Lansing and Shapiro (2026) | <a href="https://www.frbsf.org/wp-content/uploads/wp2026-10.pdf" target="_blank">Working Paper</a></div>
         </header>
 
-        <div class="description">
+        <div class="description" id="description">
             The Inflation Shock Momentum Index (ISMI) measures the share of PCE categories experiencing consecutive months of positive inflation shocks minus the share experiencing consecutive negative shocks. The index provides a real-time measure of inflation momentum across different product categories. You can view ISMI for headline PCE, core PCE, goods, non-housing services, housing, and core goods.
         </div>
+        <button class="description-more-btn" id="descriptionMoreBtn" onclick="toggleDescription()">Read more</button>
 
         <div class="main-content">
             <aside class="controls-section collapsed" id="controlsPanel">
@@ -604,16 +778,16 @@
                 </div>
             </div>
 
-            <div style="margin-top: 20px; border-top: 1px solid #e0e0e0; padding-top: 15px;">
-                <button id="advanced-toggle" style="width: 100%; padding: 10px; background: #f8f9fa; border: 1px solid #ccc; border-radius: 3px; font-size: 13px; font-weight: 600; color: #555; cursor: pointer; text-align: left; display: flex; justify-content: space-between; align-items: center;">
+            <div class="sidebar-section sidebar-section--tight">
+                <button id="advanced-toggle" class="advanced-toggle">
                     <span>Advanced Options</span>
                     <span id="advanced-icon">▼</span>
                 </button>
 
-                <div id="advanced-content" style="display: none; margin-top: 15px;">
-                    <div style="padding: 12px; background: #f8f9fa; border-left: 3px solid #004C97; border-radius: 3px; margin-bottom: 15px;">
-                        <p style="margin: 0; font-size: 13px; color: #555; line-height: 1.6;">
-                            <strong style="color: #004C97;">Note:</strong> The baseline specification in the paper uses Headline PCE with AR(1) and k=3 (3 consecutive months).
+                <div id="advanced-content" class="advanced-content hidden">
+                    <div class="advanced-note">
+                        <p>
+                            <strong>Note:</strong> The baseline specification in the paper uses Headline PCE with AR(1) and k=3 (3 consecutive months).
                         </p>
                     </div>
 
@@ -649,12 +823,12 @@
                         </div>
                     </div>
 
-                    <button id="reset-btn" style="margin-top: 15px; width: 100%; padding: 8px; background: #6c757d; color: white; border: none; border-radius: 3px; font-size: 13px; cursor: pointer; font-weight: 500; transition: background 0.2s;">
+                    <button id="reset-btn" class="reset-btn">
                         Reset to Baseline
                     </button>
 
-                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
-                        <div class="checkbox-control" style="margin-bottom: 15px;">
+                    <div class="compare-section">
+                        <div class="checkbox-control">
                             <input type="checkbox" id="show-pce" />
                             <label for="show-pce">Show YoY PCE Inflation</label>
                         </div>
@@ -664,7 +838,7 @@
                             <label for="compare-series-toggle">Compare with second series</label>
                         </div>
 
-                        <div id="compare-series-dropdown" style="display: none; margin-top: 12px;">
+                        <div id="compare-series-dropdown" class="compare-dropdown hidden">
                             <div class="control-group">
                                 <label for="compare-series-select">Second Series to Compare</label>
                                 <select id="compare-series-select">
@@ -682,15 +856,12 @@
             </div>
             </div>
 
-            <div style="margin-top: 20px; border-top: 1px solid #e0e0e0; padding-top: 20px;">
-                <div class="download-buttons" style="flex-direction: column; gap: 10px; margin: 0;">
-                    <button id="share-chart-btn" class="download-btn share-chart-btn" style="width: 100%; padding: 10px;">
-                        Share Chart
-                    </button>
-                    <button id="download-full-btn-sidebar" class="download-btn" style="width: 100%; padding: 10px;">
+            <div class="sidebar-section">
+                <div class="sidebar-download-group">
+                    <button id="download-full-btn-sidebar" class="download-btn sidebar">
                         Download Full Dataset (Excel)
                     </button>
-                    <button id="download-view-btn-sidebar" class="download-btn" style="width: 100%; padding: 10px;">
+                    <button id="download-view-btn-sidebar" class="download-btn sidebar">
                         Download Current View (CSV)
                     </button>
                 </div>
@@ -716,6 +887,11 @@
                 <div class="chart-container">
             <div class="chart-title">ISMI and Its Components</div>
 
+            <div class="chart-actions">
+                <button type="button" onclick="shareChart()">Share Chart</button>
+                <button type="button" onclick="downloadCurrentView()">Download CSV</button>
+            </div>
+
             <div class="date-range-control">
                 <div class="date-range-label">Date Range</div>
                 <div class="preset-chips">
@@ -731,9 +907,9 @@
                     <div class="date-display" id="timeseries-end">2026-06</div>
                 </div>
                 <div class="slider-row">
-                    <div style="font-size: 11px; color: #666;">Start Date</div>
+                    <div class="date-label-inline">Start Date</div>
                     <input type="range" id="timeseries-end-slider" min="0" max="100" value="100">
-                    <div style="font-size: 11px; color: #666;">End Date</div>
+                    <div class="date-label-inline">End Date</div>
                 </div>
             </div>
 
@@ -778,11 +954,11 @@
             const content = document.getElementById('advanced-content');
             const icon = document.getElementById('advanced-icon');
 
-            if (content.style.display === 'none') {
-                content.style.display = 'block';
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
                 icon.textContent = '▲';
             } else {
-                content.style.display = 'none';
+                content.classList.add('hidden');
                 icon.textContent = '▼';
             }
         }
@@ -793,9 +969,9 @@
             const dropdown = document.getElementById('compare-series-dropdown');
 
             if (checkbox.checked) {
-                dropdown.style.display = 'block';
+                dropdown.classList.remove('hidden');
             } else {
-                dropdown.style.display = 'none';
+                dropdown.classList.add('hidden');
                 // Reset the comparison selection when unchecked
                 document.getElementById('compare-series-select').value = '';
             }
@@ -807,6 +983,9 @@
             const panel = document.getElementById('controlsPanel');
             if (window.innerWidth > 768) {
                 panel.classList.remove('collapsed');
+            } else {
+                panel.classList.add('collapsed');
+                document.getElementById('toggleIcon').textContent = '▼';
             }
         }
 
@@ -870,6 +1049,7 @@
         }
 
         function updateDateDisplays() {
+            if (allData.length === 0) return;
             document.getElementById('timeseries-start').textContent = allData[timeseriesStartIdx].date;
             document.getElementById('timeseries-end').textContent = allData[timeseriesEndIdx].date;
         }
@@ -905,11 +1085,13 @@
         }
 
         function updateCharts() {
+            if (allData.length === 0) return;
             updateTimeSeriesChart();
             updateBarChartAndStats();
         }
 
         function updateTimeSeriesChart() {
+            if (allData.length === 0) return;
             const { ar, k, inflationSeries, posCol, negCol, diffCol } = getCurrentColumns();
             const series = document.getElementById('series-select').value;
             const showPCE = document.getElementById('show-pce').checked;
@@ -1221,7 +1403,7 @@
             document.getElementById('show-pce').checked = false;  // PCE off
             document.getElementById('compare-series-toggle').checked = false;  // Comparison off
             document.getElementById('compare-series-select').value = '';  // Reset to Headline
-            document.getElementById('compare-series-dropdown').style.display = 'none';  // Hide dropdown
+            document.getElementById('compare-series-dropdown').classList.add('hidden');  // Hide dropdown
 
             // Reset date range to full range
             const maxIdx = allData.length - 1;
@@ -1277,12 +1459,7 @@
             }
 
             // Add selected series columns (ISMI, positive momentum, negative momentum)
-            // New format after export script rename
-            const seriesType = inflationSeries === '' ? 'headline' :
-                               inflationSeries === '_c' ? 'core' :
-                               inflationSeries === '_g' ? 'goods' :
-                               inflationSeries === '_s' ? 'services' :
-                               inflationSeries === '_h' ? 'housing' : 'coregoods';
+            const seriesType = seriesMap[inflationSeries];
 
             const diffPrefix = `ismi_${seriesType}_ar${arOrder}_k${kValue}`;  // ISMI
             const posPrefix = `ismi_${seriesType}_positive_ar${arOrder}_k${kValue}`;    // Positive momentum
@@ -1318,7 +1495,7 @@
             if (years === 'all') {
                 startIdx = 0;
             } else {
-                startIdx = Math.max(0, maxIdx - years * 12);
+                startIdx = Math.max(0, maxIdx - years * 12 + 1);
             }
             timeseriesStartIdx = startIdx;
             timeseriesEndIdx = maxIdx;
@@ -1387,10 +1564,21 @@
             URL.revokeObjectURL(url);
         }
 
+        function toggleDescription() {
+            const desc = document.getElementById('description');
+            const btn = document.getElementById('descriptionMoreBtn');
+            if (desc.classList.contains('expanded')) {
+                desc.classList.remove('expanded');
+                btn.textContent = 'Read more';
+            } else {
+                desc.classList.add('expanded');
+                btn.textContent = 'Read less';
+            }
+        }
+
         // Attach event listeners to download buttons
         document.getElementById('download-full-btn-sidebar').addEventListener('click', downloadFullDataset);
         document.getElementById('download-view-btn-sidebar').addEventListener('click', downloadCurrentView);
-        document.getElementById('share-chart-btn').addEventListener('click', shareChart);
 
         // Event listeners for time series sliders (debounced; bar chart not affected by range)
         let sliderDebounceTimer = null;
