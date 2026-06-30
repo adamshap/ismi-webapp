@@ -300,6 +300,37 @@
             transition: background 0.2s;
         }
 
+        .preset-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .preset-chips button {
+            flex: 1;
+            min-width: 0;
+            padding: 8px 4px;
+            border: 1px solid #ccc;
+            background: white;
+            color: #004C97;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.15s;
+        }
+
+        .preset-chips button:hover {
+            background: #004C97;
+            color: white;
+            border-color: #004C97;
+        }
+
+        .share-chart-btn {
+            display: none;
+        }
+
         #reset-btn:hover {
             background: #5a6268 !important;
         }
@@ -484,12 +515,32 @@
             }
 
             .stats-container {
-                grid-template-columns: 1fr;
-                gap: 15px;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+                margin: 15px 0;
             }
 
             .stat-box {
-                padding: 15px;
+                padding: 10px 8px;
+                border-top-width: 2px;
+            }
+
+            .stat-label {
+                font-size: 10px;
+                margin-bottom: 4px;
+            }
+
+            .stat-value {
+                font-size: 18px;
+            }
+
+            .preset-chips button {
+                padding: 12px 4px;
+                font-size: 14px;
+            }
+
+            .share-chart-btn {
+                display: block;
             }
 
             .download-buttons {
@@ -633,6 +684,9 @@
 
             <div style="margin-top: 20px; border-top: 1px solid #e0e0e0; padding-top: 20px;">
                 <div class="download-buttons" style="flex-direction: column; gap: 10px; margin: 0;">
+                    <button id="share-chart-btn" class="download-btn share-chart-btn" style="width: 100%; padding: 10px;">
+                        Share Chart
+                    </button>
                     <button id="download-full-btn-sidebar" class="download-btn" style="width: 100%; padding: 10px;">
                         Download Full Dataset (Excel)
                     </button>
@@ -664,6 +718,13 @@
 
             <div class="date-range-control">
                 <div class="date-range-label">Date Range</div>
+                <div class="preset-chips">
+                    <button type="button" onclick="setDateRange(1)">1Y</button>
+                    <button type="button" onclick="setDateRange(3)">3Y</button>
+                    <button type="button" onclick="setDateRange(5)">5Y</button>
+                    <button type="button" onclick="setDateRange(10)">10Y</button>
+                    <button type="button" onclick="setDateRange('all')">All</button>
+                </div>
                 <div class="slider-row">
                     <div class="date-display" id="timeseries-start">1969-01</div>
                     <input type="range" id="timeseries-start-slider" min="0" max="100" value="0">
@@ -1250,9 +1311,86 @@
             document.body.removeChild(link);
         }
 
-        // Attach event listeners to both download buttons
+        function setDateRange(years) {
+            if (allData.length === 0) return;
+            const maxIdx = allData.length - 1;
+            let startIdx;
+            if (years === 'all') {
+                startIdx = 0;
+            } else {
+                startIdx = Math.max(0, maxIdx - years * 12);
+            }
+            timeseriesStartIdx = startIdx;
+            timeseriesEndIdx = maxIdx;
+            document.getElementById('timeseries-start-slider').value = startIdx;
+            document.getElementById('timeseries-end-slider').value = maxIdx;
+            updateDateDisplays();
+            updateTimeSeriesChart();
+        }
+
+        async function shareChart() {
+            if (!timeSeriesChartInstance) return;
+
+            const sourceCanvas = document.getElementById('timeSeriesChart');
+            const title = 'Inflation Shock Momentum Index (ISMI)';
+            const startDate = document.getElementById('timeseries-start').textContent;
+            const endDate = document.getElementById('timeseries-end').textContent;
+
+            const titleHeight = 50;
+            const footerHeight = 50;
+            const w = sourceCanvas.width;
+            const h = sourceCanvas.height + titleHeight + footerHeight;
+
+            const out = document.createElement('canvas');
+            out.width = w;
+            out.height = h;
+            const ctx = out.getContext('2d');
+
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.fillStyle = '#004C97';
+            ctx.font = 'bold 22px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(title, w / 2, 32);
+
+            ctx.drawImage(sourceCanvas, 0, titleHeight);
+
+            ctx.fillStyle = '#666';
+            ctx.font = '14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            ctx.fillText(`Lansing and Shapiro (2026)  •  Federal Reserve Bank of San Francisco  •  Data through ${endDate}`, w / 2, titleHeight + sourceCanvas.height + 30);
+
+            const blob = await new Promise(resolve => out.toBlob(resolve, 'image/png'));
+            const filename = `ismi_${startDate}_to_${endDate}.png`;
+            const file = new File([blob], filename, { type: 'image/png' });
+
+            const shareData = {
+                files: [file],
+                title: title,
+                text: `${title} — Lansing and Shapiro (2026)`
+            };
+
+            if (navigator.canShare && navigator.canShare(shareData)) {
+                try {
+                    await navigator.share(shareData);
+                    return;
+                } catch (err) {
+                    if (err.name === 'AbortError') return;
+                }
+            }
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Attach event listeners to download buttons
         document.getElementById('download-full-btn-sidebar').addEventListener('click', downloadFullDataset);
         document.getElementById('download-view-btn-sidebar').addEventListener('click', downloadCurrentView);
+        document.getElementById('share-chart-btn').addEventListener('click', shareChart);
 
         // Event listeners for time series sliders (debounced; bar chart not affected by range)
         let sliderDebounceTimer = null;
