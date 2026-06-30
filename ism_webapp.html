@@ -439,8 +439,30 @@
             border-color: #004C97;
         }
 
-        .chart-actions {
-            display: none;
+        .share-chart-btn-prominent {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin: 16px auto 0;
+            padding: 10px 22px;
+            background: #004C97;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .share-chart-btn-prominent:hover {
+            background: #003366;
+        }
+
+        .share-chart-btn-prominent .share-icon {
+            font-size: 16px;
+            line-height: 1;
         }
 
         .description-more-btn {
@@ -654,27 +676,11 @@
                 font-size: 14px;
             }
 
-            .chart-actions {
-                display: flex;
-                gap: 8px;
-                margin: -10px 0 14px 0;
-            }
-
-            .chart-actions button {
-                flex: 1;
-                padding: 10px 8px;
-                background: white;
-                color: #004C97;
-                border: 1px solid #004C97;
-                border-radius: 4px;
-                font-size: 13px;
-                font-weight: 600;
-                cursor: pointer;
-            }
-
-            .chart-actions button:active {
-                background: #004C97;
-                color: white;
+            .share-chart-btn-prominent {
+                width: 100%;
+                padding: 14px;
+                font-size: 16px;
+                margin-top: 18px;
             }
 
             .description {
@@ -887,11 +893,6 @@
                 <div class="chart-container">
             <div class="chart-title">ISMI and Its Components</div>
 
-            <div class="chart-actions">
-                <button type="button" onclick="shareChart()">Share Chart</button>
-                <button type="button" onclick="downloadCurrentView()">Download CSV</button>
-            </div>
-
             <div class="date-range-control">
                 <div class="date-range-label">Date Range</div>
                 <div class="preset-chips">
@@ -916,6 +917,10 @@
             <div class="chart-wrapper">
                 <canvas id="timeSeriesChart"></canvas>
             </div>
+
+            <button type="button" class="share-chart-btn-prominent" onclick="shareChart()">
+                <span class="share-icon">↗</span> Share This Chart
+            </button>
         </div>
 
         <div class="chart-container">
