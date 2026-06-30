@@ -359,10 +359,6 @@
             background: white;
         }
 
-        .chart-wrapper.bar-chart {
-            height: 400px;
-        }
-
         .stats-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -440,7 +436,38 @@
         }
 
         .chart-type-toggle {
-            display: none;
+            display: flex;
+            gap: 0;
+            margin: 0 0 12px 0;
+            border: 1px solid #004C97;
+            border-radius: 4px;
+            overflow: hidden;
+            max-width: 240px;
+        }
+
+        .chart-type-toggle button {
+            flex: 1;
+            padding: 8px 16px;
+            background: white;
+            color: #004C97;
+            border: none;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .chart-type-toggle button + button {
+            border-left: 1px solid #004C97;
+        }
+
+        .chart-type-toggle button.active {
+            background: #004C97;
+            color: white;
+        }
+
+        .chart-type-toggle button:hover:not(.active) {
+            background: #f0f4fa;
         }
 
         .share-chart-btn-prominent {
@@ -647,10 +674,6 @@
                 height: 350px;
             }
 
-            .chart-wrapper.bar-chart {
-                height: 300px;
-            }
-
             .chart-title {
                 font-size: 16px;
             }
@@ -687,38 +710,17 @@
                 margin-top: 18px;
             }
 
-            .bar-chart-container {
+            .chart-type-toggle {
+                max-width: none;
+            }
+
+            .date-sliders {
                 display: none;
             }
 
-            .chart-type-toggle {
-                display: flex;
-                gap: 0;
-                margin: 0 0 12px 0;
-                border: 1px solid #004C97;
-                border-radius: 4px;
-                overflow: hidden;
-            }
-
             .chart-type-toggle button {
-                flex: 1;
-                padding: 10px;
-                background: white;
-                color: #004C97;
-                border: none;
+                padding: 12px;
                 font-size: 14px;
-                font-weight: 600;
-                cursor: pointer;
-                transition: background 0.15s;
-            }
-
-            .chart-type-toggle button + button {
-                border-left: 1px solid #004C97;
-            }
-
-            .chart-type-toggle button.active {
-                background: #004C97;
-                color: white;
             }
 
             .description {
@@ -782,10 +784,6 @@
 
             .chart-wrapper {
                 height: 300px;
-            }
-
-            .chart-wrapper.bar-chart {
-                height: 250px;
             }
         }
     </style>
@@ -941,15 +939,17 @@
                     <button type="button" onclick="setDateRange(10)">10Y</button>
                     <button type="button" onclick="setDateRange('all')">All</button>
                 </div>
-                <div class="slider-row">
-                    <div class="date-display" id="timeseries-start">1969-01</div>
-                    <input type="range" id="timeseries-start-slider" min="0" max="100" value="0">
-                    <div class="date-display" id="timeseries-end">2026-06</div>
-                </div>
-                <div class="slider-row">
-                    <div class="date-label-inline">Start Date</div>
-                    <input type="range" id="timeseries-end-slider" min="0" max="100" value="100">
-                    <div class="date-label-inline">End Date</div>
+                <div class="date-sliders">
+                    <div class="slider-row">
+                        <div class="date-display" id="timeseries-start">1969-01</div>
+                        <input type="range" id="timeseries-start-slider" min="0" max="100" value="0">
+                        <div class="date-display" id="timeseries-end">2026-06</div>
+                    </div>
+                    <div class="slider-row">
+                        <div class="date-label-inline">Start Date</div>
+                        <input type="range" id="timeseries-end-slider" min="0" max="100" value="100">
+                        <div class="date-label-inline">End Date</div>
+                    </div>
                 </div>
             </div>
 
@@ -967,12 +967,6 @@
             </button>
         </div>
 
-        <div class="chart-container bar-chart-container">
-            <div class="chart-title">ISMI over the Last 24 Months</div>
-            <div class="chart-wrapper bar-chart">
-                <canvas id="barChart"></canvas>
-            </div>
-        </div>
             </main>
         </div>
 
@@ -1047,7 +1041,6 @@
         let timeseriesStartIdx = 0;
         let timeseriesEndIdx = 0;
         let timeSeriesChartInstance = null;
-        let barChartInstance = null;
 
         async function loadData() {
             try {
@@ -1137,7 +1130,7 @@
         function updateCharts() {
             if (allData.length === 0) return;
             updateTimeSeriesChart();
-            updateBarChartAndStats();
+            updateStats();
         }
 
         function updateTimeSeriesChart() {
@@ -1370,102 +1363,12 @@
 
         }
 
-        function updateBarChartAndStats() {
+        function updateStats() {
             const { posCol, negCol, diffCol } = getCurrentColumns();
-
-            // Update stats
             const latest = allData[allData.length - 1];
             document.getElementById('current-ism').textContent = parseFloat(latest[diffCol]).toFixed(3);
             document.getElementById('current-pos').textContent = parseFloat(latest[posCol]).toFixed(3);
             document.getElementById('current-neg').textContent = parseFloat(latest[negCol]).toFixed(3);
-
-            // Skip bar chart if its container is hidden (e.g., mobile)
-            const barContainer = document.querySelector('.bar-chart-container');
-            if (barContainer && window.getComputedStyle(barContainer).display === 'none') {
-                if (barChartInstance) {
-                    barChartInstance.destroy();
-                    barChartInstance = null;
-                }
-                return;
-            }
-
-            if (barChartInstance) {
-                barChartInstance.destroy();
-            }
-
-            // Bar chart (always last 24 months)
-            const barData = allData.slice(-24);
-            const barDates = barData.map(d => d.date);
-            const barValues = barData.map(d => parseFloat(d[diffCol]));
-            const barColors = barValues.map(v => v >= 0 ? '#5DADE2' : '#1F618D');
-
-            const barCtx = document.getElementById('barChart').getContext('2d');
-            barChartInstance = new Chart(barCtx, {
-                type: 'bar',
-                data: {
-                    labels: barDates,
-                    datasets: [{
-                        label: 'ISMI',
-                        data: barValues,
-                        backgroundColor: barColors,
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                title: function(context) {
-                                    // Show date label as is (already in MMM YYYY format from CSV)
-                                    return context[0].label;
-                                },
-                                label: function(context) {
-                                    return 'ISMI: ' + context.parsed.y.toFixed(3);
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            grid: { color: '#e5e5e5' },
-                            border: { color: '#d0d0d0' },
-                            ticks: {
-                                maxRotation: 45,
-                                minRotation: 45,
-                                font: { size: 10 }
-                            }
-                        },
-                        y: {
-                            title: {
-                                display: true,
-                                text: 'ISMI',
-                                font: { size: 12 }
-                            },
-                            ticks: {
-                                font: { size: window.innerWidth > 768 ? 13 : 11 }
-                            },
-                            grid: {
-                                color: function(context) {
-                                    if (context.tick.value === 0) {
-                                        return '#666666';
-                                    }
-                                    return '#e5e5e5';
-                                },
-                                lineWidth: function(context) {
-                                    if (context.tick.value === 0) {
-                                        return 2;
-                                    }
-                                    return 1;
-                                }
-                            },
-                            border: { color: '#d0d0d0' }
-                        }
-                    }
-                }
-            });
         }
 
         // Reset to baseline function
