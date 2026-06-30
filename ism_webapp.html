@@ -617,7 +617,6 @@
                             <div class="control-group">
                                 <label for="compare-series-select">Second Series to Compare</label>
                                 <select id="compare-series-select">
-                                    <option value="" selected>-- Select Series --</option>
                                     <option value="">Headline</option>
                                     <option value="_c">Core</option>
                                     <option value="_g">Goods</option>
@@ -762,8 +761,8 @@
 
         async function loadData() {
             try {
-                // Add cache buster to always fetch latest data
-                const cacheBuster = Date.now(); // Use timestamp for immediate refresh
+                const now = new Date();
+                const cacheBuster = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
                 const response = await fetch(`ism_data.csv?v=${cacheBuster}`);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -780,10 +779,6 @@
                     });
                     return row;
                 });
-
-                console.log('Data loaded successfully:', allData.length, 'rows');
-                console.log('First row:', allData[0]);
-                console.log('Headers:', headers);
 
                 if (allData.length === 0) {
                     throw new Error('No data found in CSV file');
@@ -805,8 +800,11 @@
                 updateCharts();
             } catch (error) {
                 console.error('Error loading data:', error);
-                document.getElementById('timeSeriesChart').innerHTML = '<div style="padding: 40px; text-align: center; color: #999;">Error loading data: ' + error.message + '<br>Please make sure ism_data.csv is in the same directory.</div>';
-                document.getElementById('barChart').innerHTML = '<div style="padding: 40px; text-align: center; color: #999;">Error loading data</div>';
+                const chartsEl = document.querySelector('.charts');
+                const banner = document.createElement('div');
+                banner.style.cssText = 'padding: 20px; background: #fdecea; border: 1px solid #f5c2c0; color: #b71c1c; border-radius: 4px; margin-bottom: 20px;';
+                banner.textContent = 'Error loading data: ' + error.message + ' — please make sure ism_data.csv is in the same directory.';
+                chartsEl.prepend(banner);
             }
         }
 
@@ -815,44 +813,52 @@
             document.getElementById('timeseries-end').textContent = allData[timeseriesEndIdx].date;
         }
 
-        function updateCharts() {
+        const seriesMap = {
+            '': 'headline',
+            '_c': 'core',
+            '_g': 'goods',
+            '_s': 'services',
+            '_h': 'housing',
+            '_cg': 'coregoods'
+        };
+        const seriesLabels = {
+            '': 'Headline',
+            '_c': 'Core',
+            '_g': 'Goods',
+            '_s': 'Non-Housing Services',
+            '_h': 'Housing',
+            '_cg': 'Core Goods'
+        };
+
+        function getCurrentColumns() {
             const ar = document.getElementById('ar-select').value;
             const k = document.getElementById('k-select').value;
+            const inflationSeries = document.getElementById('inflation-series-select').value;
+            const seriesName = seriesMap[inflationSeries];
+            return {
+                ar, k, inflationSeries, seriesName,
+                posCol: `ismi_${seriesName}_positive_ar${ar}_k${k}`,
+                negCol: `ismi_${seriesName}_negative_ar${ar}_k${k}`,
+                diffCol: `ismi_${seriesName}_ar${ar}_k${k}`
+            };
+        }
+
+        function updateCharts() {
+            updateTimeSeriesChart();
+            updateBarChartAndStats();
+        }
+
+        function updateTimeSeriesChart() {
+            const { ar, k, inflationSeries, posCol, negCol, diffCol } = getCurrentColumns();
             const series = document.getElementById('series-select').value;
             const showPCE = document.getElementById('show-pce').checked;
-            const inflationSeries = document.getElementById('inflation-series-select').value;
             const compareSeriesToggle = document.getElementById('compare-series-toggle').checked;
             const compareSeries = document.getElementById('compare-series-select').value;
 
-            // Map series suffix to friendly name
-            const seriesMap = {
-                '': 'headline',
-                '_c': 'core',
-                '_g': 'goods',
-                '_s': 'services',
-                '_h': 'housing',
-                '_cg': 'coregoods'
-            };
-            const seriesLabels = {
-                '': 'Headline',
-                '_c': 'Core',
-                '_g': 'Goods',
-                '_s': 'Non-Housing Services',
-                '_h': 'Housing',
-                '_cg': 'Core Goods'
-            };
-            const seriesName = seriesMap[inflationSeries];
-
-            const posCol = `ismi_${seriesName}_positive_ar${ar}_k${k}`;
-            const negCol = `ismi_${seriesName}_negative_ar${ar}_k${k}`;
-            const diffCol = `ismi_${seriesName}_ar${ar}_k${k}`;
-
-            // Comparison series columns (if enabled)
-            let compareSeriesName = null;
             let compareDiffCol = null;
             let compareIsmi = null;
-            if (compareSeriesToggle && compareSeries !== '') {
-                compareSeriesName = seriesMap[compareSeries];
+            if (compareSeriesToggle) {
+                const compareSeriesName = seriesMap[compareSeries];
                 compareDiffCol = `ismi_${compareSeriesName}_ar${ar}_k${k}`;
             }
 
@@ -864,23 +870,12 @@
             const ismiNeg = timeseriesData.map(d => parseFloat(d[negCol]));
             const pce = timeseriesData.map(d => parseFloat(d['pce_yoy']));
 
-            // Get comparison series data if enabled
             if (compareDiffCol) {
                 compareIsmi = timeseriesData.map(d => parseFloat(d[compareDiffCol]));
             }
 
-            // Update stats
-            const latest = allData[allData.length - 1];
-            document.getElementById('current-ism').textContent = parseFloat(latest[diffCol]).toFixed(3);
-            document.getElementById('current-pos').textContent = parseFloat(latest[posCol]).toFixed(3);
-            document.getElementById('current-neg').textContent = parseFloat(latest[negCol]).toFixed(3);
-
-            // Destroy existing charts
             if (timeSeriesChartInstance) {
                 timeSeriesChartInstance.destroy();
-            }
-            if (barChartInstance) {
-                barChartInstance.destroy();
             }
 
             // Time series chart datasets
@@ -916,7 +911,7 @@
 
             // Show ISMI line only if not "components_only"
             if (series !== 'components_only') {
-                const primaryLabel = compareSeriesToggle && compareSeries !== ''
+                const primaryLabel = compareSeriesToggle
                     ? `ISMI - ${seriesLabels[inflationSeries]}`
                     : 'ISMI';
 
@@ -934,7 +929,7 @@
                 });
 
                 // Add comparison series if enabled
-                if (compareSeriesToggle && compareSeries !== '' && compareIsmi) {
+                if (compareSeriesToggle && compareIsmi) {
                     datasets.push({
                         label: `ISMI - ${seriesLabels[compareSeries]}`,
                         data: dates.map((date, i) => ({ x: date, y: compareIsmi[i] })),
@@ -1065,6 +1060,21 @@
                 }
             });
 
+        }
+
+        function updateBarChartAndStats() {
+            const { posCol, negCol, diffCol } = getCurrentColumns();
+
+            // Update stats
+            const latest = allData[allData.length - 1];
+            document.getElementById('current-ism').textContent = parseFloat(latest[diffCol]).toFixed(3);
+            document.getElementById('current-pos').textContent = parseFloat(latest[posCol]).toFixed(3);
+            document.getElementById('current-neg').textContent = parseFloat(latest[negCol]).toFixed(3);
+
+            if (barChartInstance) {
+                barChartInstance.destroy();
+            }
+
             // Bar chart (always last 24 months)
             const barData = allData.slice(-24);
             const barDates = barData.map(d => d.date);
@@ -1149,7 +1159,7 @@
             document.getElementById('series-select').value = 'diff';  // ISMI only
             document.getElementById('show-pce').checked = false;  // PCE off
             document.getElementById('compare-series-toggle').checked = false;  // Comparison off
-            document.getElementById('compare-series-select').value = '';  // Reset comparison series
+            document.getElementById('compare-series-select').value = '';  // Reset to Headline
             document.getElementById('compare-series-dropdown').style.display = 'none';  // Hide dropdown
 
             // Reset date range to full range
@@ -1198,12 +1208,6 @@
             // Get filtered data based on current selections
             const filteredData = allData.slice(timeseriesStartIdx, timeseriesEndIdx + 1);
 
-            console.log('Download Debug:');
-            console.log('k=', kValue, 'ar=', arOrder, 'series=', inflationSeries);
-            console.log('timeseriesStartIdx=', timeseriesStartIdx, 'timeseriesEndIdx=', timeseriesEndIdx);
-            console.log('filteredData length=', filteredData.length);
-            console.log('First row:', filteredData[0]);
-
             // Build column list based on selections
             const columns = ['date'];
 
@@ -1222,9 +1226,6 @@
             const diffPrefix = `ismi_${seriesType}_ar${arOrder}_k${kValue}`;  // ISMI
             const posPrefix = `ismi_${seriesType}_positive_ar${arOrder}_k${kValue}`;    // Positive momentum
             const negPrefix = `ismi_${seriesType}_negative_ar${arOrder}_k${kValue}`;    // Negative momentum
-
-            console.log('Column names:', diffPrefix, posPrefix, negPrefix);
-            console.log('Sample values:', filteredData[0]?.[diffPrefix], filteredData[0]?.[posPrefix], filteredData[0]?.[negPrefix]);
 
             columns.push(diffPrefix, posPrefix, negPrefix);
 
@@ -1253,7 +1254,13 @@
         document.getElementById('download-full-btn-sidebar').addEventListener('click', downloadFullDataset);
         document.getElementById('download-view-btn-sidebar').addEventListener('click', downloadCurrentView);
 
-        // Event listeners for time series sliders
+        // Event listeners for time series sliders (debounced; bar chart not affected by range)
+        let sliderDebounceTimer = null;
+        function scheduleTimeSeriesUpdate() {
+            clearTimeout(sliderDebounceTimer);
+            sliderDebounceTimer = setTimeout(updateTimeSeriesChart, 50);
+        }
+
         document.getElementById('timeseries-start-slider').addEventListener('input', (e) => {
             timeseriesStartIdx = parseInt(e.target.value);
             if (timeseriesStartIdx > timeseriesEndIdx) {
@@ -1261,7 +1268,7 @@
                 e.target.value = timeseriesStartIdx;
             }
             updateDateDisplays();
-            updateCharts();
+            scheduleTimeSeriesUpdate();
         });
 
         document.getElementById('timeseries-end-slider').addEventListener('input', (e) => {
@@ -1271,7 +1278,7 @@
                 e.target.value = timeseriesEndIdx;
             }
             updateDateDisplays();
-            updateCharts();
+            scheduleTimeSeriesUpdate();
         });
 
         loadData();
