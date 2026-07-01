@@ -1445,6 +1445,21 @@
                 }
             });
 
+            // Dismiss tooltip when the user taps anywhere outside the chart.
+            // On touch, Chart.js pins the tooltip on tap; without this the tooltip
+            // stays on-screen indefinitely with no clear way for the user to remove it.
+            if (!window._ismiTooltipDismissAttached) {
+                const dismissTooltip = (e) => {
+                    const canvas = document.getElementById('timeSeriesChart');
+                    if (!timeSeriesChartInstance || !canvas) return;
+                    if (canvas.contains(e.target)) return;
+                    timeSeriesChartInstance.setActiveElements([]);
+                    timeSeriesChartInstance.tooltip.setActiveElements([], { x: 0, y: 0 });
+                    timeSeriesChartInstance.update('none');
+                };
+                document.addEventListener('pointerdown', dismissTooltip);
+                window._ismiTooltipDismissAttached = true;
+            }
         }
 
         function updateStats() {
