@@ -951,7 +951,7 @@
             <div class="sidebar-section">
                 <div class="sidebar-download-group">
                     <button id="download-full-btn-sidebar" class="download-btn sidebar">
-                        Download Full Dataset (CSV)
+                        Download Full Dataset (Excel)
                     </button>
                     <button id="download-view-btn-sidebar" class="download-btn sidebar">
                         Download Current View (CSV)
@@ -1477,11 +1477,11 @@
         document.getElementById('reset-btn').addEventListener('click', resetToBaseline);
         document.getElementById('advanced-toggle').addEventListener('click', toggleAdvanced);
 
-        // Download full dataset — served alongside the webapp as ism_data.csv.
+        // Download full dataset — served alongside the webapp as ismi_data.xlsx.
         function downloadFullDataset() {
             const a = document.createElement('a');
-            a.href = 'ism_data.csv';
-            a.download = 'ism_data.csv';
+            a.href = 'ismi_data.xlsx';
+            a.download = 'ismi_data.xlsx';
             a.click();
         }
 
