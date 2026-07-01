@@ -17,10 +17,12 @@
         }
 
         body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
             background: #ffffff;
-            color: #333;
+            color: #1f2937;
             line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         .container {
@@ -37,7 +39,7 @@
         header {
             margin-bottom: 40px;
             padding-bottom: 30px;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid #e5e7eb;
         }
 
         h1 {
@@ -49,18 +51,18 @@
         }
 
         .subtitle {
-            color: #666;
+            color: #6b7280;
             font-size: 16px;
             font-weight: 400;
         }
 
         .description {
-            background: #f8f9fa;
+            background: #f8fafc;
             border-left: 4px solid #004C97;
             padding: 20px;
             margin: 30px 0;
             font-size: 14px;
-            color: #555;
+            color: #4b5563;
             line-height: 1.8;
         }
 
@@ -79,7 +81,7 @@
         .controls-label {
             font-size: 14px;
             font-weight: 600;
-            color: #333;
+            color: #1f2937;
             margin-bottom: 15px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -107,15 +109,15 @@
         .control-group label {
             font-size: 13px;
             font-weight: 600;
-            color: #666;
+            color: #6b7280;
         }
 
         select {
             padding: 10px 12px;
-            border: 1px solid #ccc;
-            border-radius: 3px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
             background: white;
-            color: #333;
+            color: #1f2937;
             font-size: 14px;
             cursor: pointer;
             transition: border-color 0.2s;
@@ -148,7 +150,7 @@
 
         .sidebar-section {
             margin-top: 20px;
-            border-top: 1px solid #e0e0e0;
+            border-top: 1px solid #e5e7eb;
             padding-top: 20px;
         }
 
@@ -166,17 +168,30 @@
         .advanced-toggle {
             width: 100%;
             padding: 10px;
-            background: #f8f9fa;
-            border: 1px solid #ccc;
-            border-radius: 3px;
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
             font-size: 13px;
             font-weight: 600;
-            color: #555;
+            color: #374151;
             cursor: pointer;
             text-align: left;
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+
+        .advanced-toggle .caret {
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid #6b7280;
+            transition: transform 0.2s;
+        }
+
+        .advanced-toggle.open .caret {
+            transform: rotate(180deg);
         }
 
         .advanced-content {
@@ -189,16 +204,16 @@
 
         .advanced-note {
             padding: 12px;
-            background: #f8f9fa;
+            background: #f8fafc;
             border-left: 3px solid #004C97;
-            border-radius: 3px;
+            border-radius: 6px;
             margin-bottom: 15px;
         }
 
         .advanced-note p {
             margin: 0;
             font-size: 13px;
-            color: #555;
+            color: #4b5563;
             line-height: 1.6;
         }
 
@@ -213,7 +228,7 @@
             background: #6c757d;
             color: white;
             border: none;
-            border-radius: 3px;
+            border-radius: 6px;
             font-size: 13px;
             cursor: pointer;
             font-weight: 500;
@@ -223,7 +238,7 @@
         .compare-section {
             margin-top: 15px;
             padding-top: 15px;
-            border-top: 1px solid #e0e0e0;
+            border-top: 1px solid #e5e7eb;
         }
 
         .compare-section .checkbox-control {
@@ -244,7 +259,7 @@
 
         .date-label-inline {
             font-size: 11px;
-            color: #666;
+            color: #6b7280;
         }
 
         .chart-container {
@@ -255,14 +270,15 @@
         .chart-title {
             font-size: 18px;
             font-weight: 600;
-            color: #333;
+            color: #1f2937;
             margin-bottom: 20px;
+            line-height: 1.3;
         }
 
         .date-range-control {
-            background: #f8f9fa;
-            border: 1px solid #e0e0e0;
-            border-radius: 4px;
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
             padding: 20px;
             margin-bottom: 15px;
         }
@@ -270,7 +286,7 @@
         .date-range-label {
             font-size: 12px;
             font-weight: 600;
-            color: #666;
+            color: #6b7280;
             margin-bottom: 12px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -286,8 +302,8 @@
 
         .date-display {
             background: white;
-            border: 1px solid #ccc;
-            border-radius: 3px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
             padding: 8px 12px;
             font-size: 13px;
             font-weight: 600;
@@ -299,7 +315,7 @@
             width: 100%;
             height: 6px;
             border-radius: 3px;
-            background: #d0d0d0;
+            background: #e5e7eb;
             outline: none;
             -webkit-appearance: none;
         }
@@ -354,8 +370,8 @@
         }
 
         .chart-wrapper canvas {
-            border: 1px solid #e0e0e0;
-            border-radius: 4px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
             background: white;
         }
 
@@ -367,15 +383,15 @@
         }
 
         .stat-box {
-            background: #f8f9fa;
+            background: #f8fafc;
             padding: 20px;
-            border-radius: 4px;
+            border-radius: 6px;
             border-top: 3px solid #004C97;
         }
 
         .stat-label {
             font-size: 12px;
-            color: #666;
+            color: #6b7280;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 8px;
@@ -385,6 +401,7 @@
             font-size: 28px;
             font-weight: 600;
             color: #004C97;
+            letter-spacing: -0.5px;
         }
 
         .download-buttons {
@@ -401,7 +418,7 @@
             background: #004C97;
             color: white;
             border: none;
-            border-radius: 3px;
+            border-radius: 6px;
             font-size: 14px;
             cursor: pointer;
             font-weight: 600;
@@ -419,10 +436,10 @@
             flex: 1;
             min-width: 0;
             padding: 8px 4px;
-            border: 1px solid #ccc;
+            border: 1px solid #e5e7eb;
             background: white;
             color: #004C97;
-            border-radius: 3px;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 13px;
             font-weight: 600;
@@ -443,7 +460,7 @@
             gap: 0;
             margin: 0 0 12px 0;
             border: 1px solid #004C97;
-            border-radius: 4px;
+            border-radius: 6px;
             overflow: hidden;
             max-width: 240px;
         }
@@ -486,7 +503,7 @@
             background: #004C97;
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
@@ -516,15 +533,15 @@
         footer {
             margin-top: 60px;
             padding-top: 30px;
-            border-top: 1px solid #e0e0e0;
+            border-top: 1px solid #e5e7eb;
             font-size: 13px;
-            color: #666;
+            color: #6b7280;
             text-align: center;
             line-height: 1.8;
         }
 
         footer strong {
-            color: #333;
+            color: #1f2937;
         }
 
         /* Mobile toggle button - only visible on mobile */
@@ -587,7 +604,7 @@
 
             .mobile-toggle {
                 width: 100%;
-                padding: 15px;
+                padding: 15px 18px;
                 background: #004C97;
                 color: white;
                 border: none;
@@ -605,6 +622,19 @@
 
             .mobile-toggle:active {
                 background: #003d7a;
+            }
+
+            .mobile-toggle .caret {
+                width: 0;
+                height: 0;
+                border-left: 6px solid transparent;
+                border-right: 6px solid transparent;
+                border-top: 7px solid rgba(255,255,255,0.9);
+                transition: transform 0.2s ease;
+            }
+
+            .controls-section:not(.collapsed) .mobile-toggle .caret {
+                transform: rotate(180deg);
             }
 
             .desktop-only {
@@ -650,7 +680,7 @@
             }
 
             input[type="range"]::-webkit-slider-track {
-                background: #ddd;
+                background: #e5e7eb;
                 height: 8px;
                 border-radius: 4px;
             }
@@ -667,7 +697,7 @@
             }
 
             input[type="range"]::-moz-range-track {
-                background: #ddd;
+                background: #e5e7eb;
                 height: 8px;
                 border-radius: 4px;
             }
@@ -687,31 +717,40 @@
 
             .chart-title {
                 font-size: 16px;
+                line-height: 1.3;
+                word-break: break-word;
             }
 
             .stats-container {
                 grid-template-columns: repeat(3, 1fr);
-                gap: 8px;
-                margin: 15px 0;
+                gap: 10px;
+                margin: 18px 0;
             }
 
             .stat-box {
-                padding: 10px 8px;
-                border-top-width: 2px;
+                padding: 14px 10px;
+                border-top-width: 3px;
             }
 
             .stat-label {
-                font-size: 10px;
-                margin-bottom: 4px;
+                font-size: 11px;
+                margin-bottom: 6px;
             }
 
             .stat-value {
-                font-size: 18px;
+                font-size: 22px;
+            }
+
+            .preset-chips {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
             }
 
             .preset-chips button {
                 padding: 12px 4px;
                 font-size: 14px;
+                min-height: 44px;
             }
 
             .share-chart-btn-prominent {
@@ -736,7 +775,7 @@
 
             .description {
                 position: relative;
-                max-height: 4.2em;
+                max-height: 6em;
                 overflow: hidden;
                 margin: 15px 0 20px 0;
             }
@@ -751,8 +790,8 @@
                 bottom: 0;
                 left: 0;
                 right: 0;
-                height: 1.5em;
-                background: linear-gradient(transparent, #f8f9fa);
+                height: 1em;
+                background: linear-gradient(transparent, #f8fafc);
                 pointer-events: none;
             }
 
@@ -813,9 +852,9 @@
 
         <div class="main-content">
             <aside class="controls-section collapsed" id="controlsPanel">
-            <button class="mobile-toggle" id="mobileToggle" onclick="toggleControls()">
+            <button class="mobile-toggle" id="mobileToggle" onclick="toggleControls()" aria-expanded="false">
                 <span>Chart Options</span>
-                <span id="toggleIcon">▼</span>
+                <span class="caret" aria-hidden="true"></span>
             </button>
 
             <div class="controls-content">
@@ -832,9 +871,9 @@
             </div>
 
             <div class="sidebar-section sidebar-section--tight">
-                <button id="advanced-toggle" class="advanced-toggle">
+                <button id="advanced-toggle" class="advanced-toggle" aria-expanded="false">
                     <span>Advanced Options</span>
-                    <span id="advanced-icon">▼</span>
+                    <span class="caret" aria-hidden="true"></span>
                 </button>
 
                 <div id="advanced-content" class="advanced-content hidden">
@@ -989,32 +1028,21 @@
     </div>
 
     <script>
-        // Mobile controls toggle
+        // Mobile controls toggle — caret rotation is handled by CSS
+        // (.controls-section:not(.collapsed) .caret { transform: rotate(180deg) }).
         function toggleControls() {
             const panel = document.getElementById('controlsPanel');
-            const icon = document.getElementById('toggleIcon');
-
-            if (panel.classList.contains('collapsed')) {
-                panel.classList.remove('collapsed');
-                icon.textContent = '▲';
-            } else {
-                panel.classList.add('collapsed');
-                icon.textContent = '▼';
-            }
+            const expanded = panel.classList.toggle('collapsed') === false;
+            document.getElementById('mobileToggle').setAttribute('aria-expanded', String(expanded));
         }
 
-        // Advanced options toggle
+        // Advanced options toggle — caret rotation handled by CSS via .advanced-toggle.open.
         function toggleAdvanced() {
             const content = document.getElementById('advanced-content');
-            const icon = document.getElementById('advanced-icon');
-
-            if (content.classList.contains('hidden')) {
-                content.classList.remove('hidden');
-                icon.textContent = '▲';
-            } else {
-                content.classList.add('hidden');
-                icon.textContent = '▼';
-            }
+            const btn = document.getElementById('advanced-toggle');
+            const nowHidden = content.classList.toggle('hidden');
+            btn.classList.toggle('open', !nowHidden);
+            btn.setAttribute('aria-expanded', String(!nowHidden));
         }
 
         // Compare series toggle
@@ -1035,17 +1063,24 @@
         // Auto-expand controls on desktop, start collapsed on mobile
         function checkScreenSize() {
             const panel = document.getElementById('controlsPanel');
+            const toggle = document.getElementById('mobileToggle');
             if (window.innerWidth > 768) {
                 panel.classList.remove('collapsed');
+                if (toggle) toggle.setAttribute('aria-expanded', 'true');
             } else {
                 panel.classList.add('collapsed');
-                document.getElementById('toggleIcon').textContent = '▼';
+                if (toggle) toggle.setAttribute('aria-expanded', 'false');
             }
         }
 
-        // Run on load and resize
+        // Run on load and (debounced) resize — mobile address-bar collapse fires
+        // resize repeatedly, so we coalesce to one call per animation frame.
         window.addEventListener('load', checkScreenSize);
-        window.addEventListener('resize', checkScreenSize);
+        let resizeRaf = null;
+        window.addEventListener('resize', () => {
+            if (resizeRaf) return;
+            resizeRaf = requestAnimationFrame(() => { resizeRaf = null; checkScreenSize(); });
+        });
 
         let allData = [];
         let chartType = 'line';
