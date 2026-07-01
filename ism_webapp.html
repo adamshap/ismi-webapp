@@ -427,9 +427,12 @@
             font-size: 13px;
             font-weight: 600;
             transition: all 0.15s;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .preset-chips button:hover {
+        .preset-chips button:hover,
+        .preset-chips button:active {
             background: #004C97;
             color: white;
             border-color: #004C97;
@@ -455,6 +458,8 @@
             font-weight: 600;
             cursor: pointer;
             transition: background 0.15s;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .chart-type-toggle button + button {
@@ -466,7 +471,8 @@
             color: white;
         }
 
-        .chart-type-toggle button:hover:not(.active) {
+        .chart-type-toggle button:hover:not(.active),
+        .chart-type-toggle button:active:not(.active) {
             background: #f0f4fa;
         }
 
@@ -485,9 +491,12 @@
             font-weight: 600;
             cursor: pointer;
             transition: background 0.2s;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .share-chart-btn-prominent:hover {
+        .share-chart-btn-prominent:hover,
+        .share-chart-btn-prominent:active {
             background: #003366;
         }
 
@@ -590,6 +599,8 @@
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
+                user-select: none;
+                -webkit-tap-highlight-color: transparent;
             }
 
             .mobile-toggle:active {
@@ -901,7 +912,7 @@
             <div class="sidebar-section">
                 <div class="sidebar-download-group">
                     <button id="download-full-btn-sidebar" class="download-btn sidebar">
-                        Download Full Dataset (Excel)
+                        Download Full Dataset (CSV)
                     </button>
                     <button id="download-view-btn-sidebar" class="download-btn sidebar">
                         Download Current View (CSV)
@@ -1305,10 +1316,11 @@
                         tooltip: {
                             callbacks: {
                                 title: function(context) {
-                                    // Format date as "MMM YYYY" (e.g., "Jan 2024")
+                                    // Format as "MMM YYYY". CSV dates are parsed as UTC-midnight
+                                    // of the 1st; formatting in local time drops the month by one
+                                    // for negative-UTC users, so pin the format to UTC.
                                     const date = new Date(context[0].parsed.x);
-                                    const options = { year: 'numeric', month: 'short' };
-                                    return date.toLocaleDateString('en-US', options);
+                                    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', timeZone: 'UTC' });
                                 },
                                 label: function(context) {
                                     let label = context.dataset.label || '';
@@ -1382,10 +1394,18 @@
 
         function updateStats() {
             const { posCol, negCol, diffCol } = getCurrentColumns();
-            const latest = allData[allData.length - 1];
-            document.getElementById('current-ism').textContent = parseFloat(latest[diffCol]).toFixed(3);
-            document.getElementById('current-pos').textContent = parseFloat(latest[posCol]).toFixed(3);
-            document.getElementById('current-neg').textContent = parseFloat(latest[negCol]).toFixed(3);
+            // Not every (AR, k, series) combo has values in the newest CSV row —
+            // walk back until each column has a real number so we don't render "NaN".
+            const fmt = (col) => {
+                for (let i = allData.length - 1; i >= 0; i--) {
+                    const v = parseFloat(allData[i][col]);
+                    if (!isNaN(v)) return v.toFixed(3);
+                }
+                return '—';
+            };
+            document.getElementById('current-ism').textContent = fmt(diffCol);
+            document.getElementById('current-pos').textContent = fmt(posCol);
+            document.getElementById('current-neg').textContent = fmt(negCol);
         }
 
         // Reset to baseline function
@@ -1422,12 +1442,11 @@
         document.getElementById('reset-btn').addEventListener('click', resetToBaseline);
         document.getElementById('advanced-toggle').addEventListener('click', toggleAdvanced);
 
-        // Download full dataset button - downloads Excel file from GitHub
+        // Download full dataset — served alongside the webapp as ism_data.csv.
         function downloadFullDataset() {
-            const url = 'ismi_data.xlsx';
             const a = document.createElement('a');
-            a.href = url;
-            a.download = 'ismi_data.xlsx';
+            a.href = 'ism_data.csv';
+            a.download = 'ism_data.csv';
             a.click();
         }
 
@@ -1438,29 +1457,15 @@
                 return;
             }
 
-            const inflationSeries = document.getElementById('inflation-series-select').value;
-            const kValue = document.getElementById('k-select').value;
-            const arOrder = document.getElementById('ar-select').value;
+            const { ar, k, posCol, negCol, diffCol } = getCurrentColumns();
             const showPCE = document.getElementById('show-pce').checked;
 
             // Get filtered data based on current selections
             const filteredData = allData.slice(timeseriesStartIdx, timeseriesEndIdx + 1);
 
-            // Build column list based on selections
             const columns = ['date'];
-
-            if (showPCE) {
-                columns.push('pce_yoy');
-            }
-
-            // Add selected series columns (ISMI, positive momentum, negative momentum)
-            const seriesType = seriesMap[inflationSeries];
-
-            const diffPrefix = `ismi_${seriesType}_ar${arOrder}_k${kValue}`;  // ISMI
-            const posPrefix = `ismi_${seriesType}_positive_ar${arOrder}_k${kValue}`;    // Positive momentum
-            const negPrefix = `ismi_${seriesType}_negative_ar${arOrder}_k${kValue}`;    // Negative momentum
-
-            columns.push(diffPrefix, posPrefix, negPrefix);
+            if (showPCE) columns.push('pce_yoy');
+            columns.push(diffCol, posCol, negCol);
 
             // Create CSV with selected columns
             const csvContent = [
@@ -1475,7 +1480,7 @@
 
             const startDate = filteredData[0]?.date || 'start';
             const endDate = filteredData[filteredData.length - 1]?.date || 'end';
-            link.setAttribute('download', `ismi_k${kValue}_ar${arOrder}_${startDate}_to_${endDate}.csv`);
+            link.setAttribute('download', `ismi_k${k}_ar${ar}_${startDate}_to_${endDate}.csv`);
 
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
@@ -1516,9 +1521,11 @@
             const startDate = document.getElementById('timeseries-start').textContent;
             const endDate = document.getElementById('timeseries-end').textContent;
 
-            const titleHeight = 50;
-            const footerHeight = 50;
             const w = sourceCanvas.width;
+            // Scale title size to canvas width so wide screens don't get a tiny 22px title.
+            const titleFontSize = Math.max(24, Math.min(48, Math.round(w / 32)));
+            const titleHeight = Math.round(titleFontSize * 2.2);
+            const footerHeight = 50;
             const h = sourceCanvas.height + titleHeight + footerHeight;
 
             const out = document.createElement('canvas');
@@ -1530,9 +1537,11 @@
             ctx.fillRect(0, 0, w, h);
 
             ctx.fillStyle = '#004C97';
-            ctx.font = 'bold 22px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            ctx.font = `bold ${titleFontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
             ctx.textAlign = 'center';
-            ctx.fillText(title, w / 2, 32);
+            ctx.textBaseline = 'middle';
+            ctx.fillText(title, w / 2, titleHeight / 2);
+            ctx.textBaseline = 'alphabetic';
 
             ctx.drawImage(sourceCanvas, 0, titleHeight);
 
