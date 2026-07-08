@@ -1608,35 +1608,36 @@
             if (!timeSeriesChartInstance) return;
 
             const sourceCanvas = document.getElementById('timeSeriesChart');
-            const chartTitleEl = document.getElementById('chartTitle');
-            const title = (chartTitleEl && chartTitleEl.textContent.trim()) || 'Inflation Shock Momentum Index (ISMI)';
+            const title = document.getElementById('chartTitle').textContent.trim();
             const startDate = document.getElementById('timeseries-start').textContent;
             const endDate = document.getElementById('timeseries-end').textContent;
 
             const w = sourceCanvas.width;
-            // Scale title size to canvas width so wide screens don't get a tiny 22px title.
-            let titleFontSize = Math.max(24, Math.min(48, Math.round(w / 32)));
-            const titleHeight = Math.round(titleFontSize * 2.2);
             const footerHeight = 50;
-            const h = sourceCanvas.height + titleHeight + footerHeight;
+            const titleFont = (px) => `bold ${px}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
 
             const out = document.createElement('canvas');
             out.width = w;
-            out.height = h;
             const ctx = out.getContext('2d');
 
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, w, h);
-
-            ctx.fillStyle = '#004C97';
-            const titleFont = (px) => `bold ${px}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+            // Fit title to canvas width. measureText scales ~linearly with font size,
+            // so one ratio pass gets us there without a loop.
+            let titleFontSize = Math.max(24, Math.min(48, Math.round(w / 32)));
             const maxTitleWidth = w - 40;
             ctx.font = titleFont(titleFontSize);
-            // Shrink long titles (e.g., "…— Non-Housing Services, AR(12), k=4") so they fit.
-            while (titleFontSize > 14 && ctx.measureText(title).width > maxTitleWidth) {
-                titleFontSize -= 1;
-                ctx.font = titleFont(titleFontSize);
+            const measured = ctx.measureText(title).width;
+            if (measured > maxTitleWidth) {
+                titleFontSize = Math.max(14, Math.floor(titleFontSize * maxTitleWidth / measured));
             }
+            const titleHeight = Math.round(titleFontSize * 2.2);
+            // Setting canvas.height resets context state — assign it before re-applying font.
+            out.height = sourceCanvas.height + titleHeight + footerHeight;
+            ctx.font = titleFont(titleFontSize);
+
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, w, out.height);
+
+            ctx.fillStyle = '#004C97';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(title, w / 2, titleHeight / 2);
