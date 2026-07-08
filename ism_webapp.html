@@ -891,6 +891,7 @@
                         <option value="components_only">Components Only</option>
                     </select>
                 </div>
+                <div id="inflation-series-mobile-slot"></div>
             </div>
 
             <div class="sidebar-section sidebar-section--tight">
@@ -907,7 +908,7 @@
                     </div>
 
                     <div class="controls-grid">
-                        <div class="control-group">
+                        <div class="control-group" id="inflation-series-group">
                             <label for="inflation-series-select">Inflation Series</label>
                             <select id="inflation-series-select">
                                 <option value="" selected>Headline</option>
@@ -1093,6 +1094,23 @@
             } else {
                 panel.classList.add('collapsed');
                 if (toggle) toggle.setAttribute('aria-expanded', 'false');
+            }
+            positionInflationSeries();
+        }
+
+        // On mobile, surface the Inflation Series dropdown next to "Series to Display".
+        // On desktop, keep it inside Advanced Options where power-user controls live.
+        function positionInflationSeries() {
+            const group = document.getElementById('inflation-series-group');
+            const mobileSlot = document.getElementById('inflation-series-mobile-slot');
+            if (!group || !mobileSlot) return;
+            const isMobile = window.innerWidth <= 768;
+            if (isMobile && group.parentElement !== mobileSlot) {
+                mobileSlot.appendChild(group);
+            } else if (!isMobile && group.parentElement === mobileSlot) {
+                // Restore as the first child of the advanced controls grid (its original slot).
+                const advancedGrid = document.querySelector('#advanced-content .controls-grid');
+                if (advancedGrid) advancedGrid.insertBefore(group, advancedGrid.firstChild);
             }
         }
 
