@@ -614,6 +614,7 @@
                 overscroll-behavior-y: contain;
                 -webkit-overflow-scrolling: touch;
                 box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+                transition: max-height 0.25s ease;
             }
 
             .charts {
@@ -623,6 +624,15 @@
             .controls-section.collapsed {
                 max-height: 60px;
                 overflow: hidden;
+            }
+
+            .controls-content {
+                transition: opacity 0.2s ease;
+            }
+
+            .controls-section.collapsed .controls-content {
+                opacity: 0;
+                pointer-events: none;
             }
 
             .mobile-toggle {
@@ -666,10 +676,6 @@
 
             .controls-content {
                 display: block;
-            }
-
-            .controls-section.collapsed .controls-content {
-                display: none;
             }
 
             .controls-grid {
