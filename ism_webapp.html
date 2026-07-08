@@ -64,7 +64,7 @@
         h1 {
             color: #004C97;
             font-size: 32px;
-            font-weight: 400;
+            font-weight: 600;
             margin-bottom: 12px;
             letter-spacing: -0.5px;
         }
@@ -153,7 +153,8 @@
         }
 
         .download-btn:hover {
-            background: #003366;
+            background: #004C97;
+            color: white;
         }
 
         .download-btn.sidebar {
@@ -215,10 +216,17 @@
 
         .advanced-content {
             margin-top: 15px;
+            max-height: 1200px;
+            opacity: 1;
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.2s ease, margin-top 0.3s ease;
         }
 
         .advanced-content.hidden {
-            display: none;
+            max-height: 0;
+            opacity: 0;
+            margin-top: 0;
+            pointer-events: none;
         }
 
         .advanced-note {
@@ -270,10 +278,17 @@
 
         .compare-dropdown {
             margin-top: 12px;
+            max-height: 200px;
+            opacity: 1;
+            overflow: hidden;
+            transition: max-height 0.25s ease, opacity 0.2s ease, margin-top 0.25s ease;
         }
 
         .compare-dropdown.hidden {
-            display: none;
+            max-height: 0;
+            opacity: 0;
+            margin-top: 0;
+            pointer-events: none;
         }
 
         .date-label-inline {
@@ -434,14 +449,14 @@
 
         .download-btn {
             padding: 12px 30px;
-            background: #004C97;
-            color: white;
-            border: none;
+            background: white;
+            color: #004C97;
+            border: 1px solid #004C97;
             border-radius: 6px;
             font-size: 14px;
             cursor: pointer;
             font-weight: 600;
-            transition: background 0.2s;
+            transition: background 0.2s, color 0.2s;
         }
 
         .preset-chips {
@@ -468,7 +483,8 @@
         }
 
         .preset-chips button:hover,
-        .preset-chips button:active {
+        .preset-chips button:active,
+        .preset-chips button.active {
             background: #004C97;
             color: white;
             border-color: #004C97;
@@ -534,6 +550,11 @@
         .share-chart-btn-prominent:hover,
         .share-chart-btn-prominent:active {
             background: #003366;
+        }
+
+        .share-chart-btn-prominent:disabled {
+            background: #4b6fa0;
+            cursor: wait;
         }
 
         .share-chart-btn-prominent .share-icon {
@@ -607,7 +628,7 @@
                 top: auto;
                 bottom: 0;
                 z-index: 100;
-                max-height: 70vh;
+                max-height: 55vh;
                 overflow-y: auto;
                 /* Keep panel scroll and page scroll independent — otherwise reaching
                    the top/bottom of the panel "chains" the drag to the outer page. */
@@ -1226,7 +1247,10 @@
             updateStats();
         }
 
-        function updateTimeSeriesChart() {
+        // updateMode:
+        //   undefined → default Chart.js animation (smooth value tween for AR/k/series changes)
+        //   'none'    → snap (used for date-range changes, where point count differs and tweening looks off)
+        function updateTimeSeriesChart(updateMode) {
             if (allData.length === 0) return;
             const { ar, k, inflationSeries, posCol, negCol, diffCol } = getCurrentColumns();
             const series = document.getElementById('series-select').value;
@@ -1269,20 +1293,27 @@
                 compareIsmi = timeseriesData.map(d => parseFloat(d[compareDiffCol]));
             }
 
-            if (timeSeriesChartInstance) {
-                timeSeriesChartInstance.destroy();
-            }
-
             // Time series chart datasets
             const datasets = [];
 
+            // Palette (all keyed off SF Fed navy #004C97):
+            //   primary ISMI = navy, positive = red, negative = slate,
+            //   compare = copper dashed, PCE = gray dashed on y2,
+            //   bar mode = navy positive / slate negative.
+            const COLOR_PRIMARY = '#004C97';
+            const COLOR_POSITIVE = '#B02A30';
+            const COLOR_NEGATIVE = '#94A3B8';
+            const COLOR_COMPARE = '#B87333';
+            const COLOR_PCE = '#6b7280';
+            const COLOR_BAR_POS = '#004C97';
+            const COLOR_BAR_NEG = '#94A3B8';
+
             if (series === 'components' || series === 'components_only') {
-                // Show positive and negative components
                 datasets.push({
                     label: 'Positive Momentum',
                     data: dates.map((date, i) => ({ x: date, y: ismiPos[i] })),
-                    borderColor: '#ffb3ba',
-                    backgroundColor: '#ffb3ba',
+                    borderColor: COLOR_POSITIVE,
+                    backgroundColor: COLOR_POSITIVE,
                     borderWidth: 2,
                     fill: false,
                     tension: 0.1,
@@ -1293,8 +1324,8 @@
                 datasets.push({
                     label: 'Negative Momentum',
                     data: dates.map((date, i) => ({ x: date, y: ismiNeg[i] })),
-                    borderColor: '#999999',
-                    backgroundColor: '#999999',
+                    borderColor: COLOR_NEGATIVE,
+                    backgroundColor: COLOR_NEGATIVE,
                     borderWidth: 2,
                     fill: false,
                     tension: 0.1,
@@ -1313,8 +1344,8 @@
                 datasets.push({
                     label: primaryLabel,
                     data: dates.map((date, i) => ({ x: date, y: ismi[i] })),
-                    borderColor: '#001f3f',
-                    backgroundColor: '#001f3f',
+                    borderColor: COLOR_PRIMARY,
+                    backgroundColor: COLOR_PRIMARY,
                     borderWidth: 2.5,
                     fill: false,
                     tension: 0.1,
@@ -1323,13 +1354,12 @@
                     pointHoverRadius: 4
                 });
 
-                // Add comparison series if enabled
                 if (compareSeriesToggle && compareIsmi) {
                     datasets.push({
                         label: `ISMI - ${seriesLabels[compareSeries]}`,
                         data: dates.map((date, i) => ({ x: date, y: compareIsmi[i] })),
-                        borderColor: '#E67E22',
-                        backgroundColor: '#E67E22',
+                        borderColor: COLOR_COMPARE,
+                        backgroundColor: COLOR_COMPARE,
                         borderWidth: 2.5,
                         borderDash: [8, 4],
                         fill: false,
@@ -1341,13 +1371,12 @@
                 }
             }
 
-            // Add PCE if checkbox is checked
             if (showPCE) {
                 datasets.push({
                     label: 'YoY PCE Inflation',
                     data: dates.map((date, i) => ({ x: date, y: pce[i] })),
-                    borderColor: '#E74C3C',
-                    backgroundColor: '#E74C3C',
+                    borderColor: COLOR_PCE,
+                    backgroundColor: COLOR_PCE,
                     borderWidth: 2,
                     borderDash: [5, 5],
                     fill: false,
@@ -1358,10 +1387,8 @@
                 });
             }
 
-            // Bar mode: replace datasets with a single bar dataset of the main ISMI series,
-            // colored by sign to match the desktop "Last 24 Months" chart.
             if (chartType === 'bar') {
-                const barColors = ismi.map(v => v >= 0 ? '#5DADE2' : '#1F618D');
+                const barColors = ismi.map(v => v >= 0 ? COLOR_BAR_POS : COLOR_BAR_NEG);
                 datasets.length = 0;
                 datasets.push({
                     label: 'ISMI',
@@ -1373,12 +1400,10 @@
                 });
             }
 
-            // Create time series chart
-            const timeSeriesCtx = document.getElementById('timeSeriesChart').getContext('2d');
-            timeSeriesChartInstance = new Chart(timeSeriesCtx, {
-                type: chartType === 'bar' ? 'bar' : 'line',
-                data: { datasets },
-                options: {
+            // Build config once; reuse via chart.update() on subsequent renders
+            // so AR/k/series/slider changes tween smoothly instead of flashing.
+            const desiredType = chartType === 'bar' ? 'bar' : 'line';
+            const chartOptions = {
                     responsive: true,
                     maintainAspectRatio: false,
                     interaction: {
@@ -1469,8 +1494,22 @@
                             border: { color: '#d0d0d0' }
                         } : undefined
                     }
-                }
-            });
+                };
+
+            // Type changes (line↔bar) require a fresh Chart; everything else animates.
+            if (timeSeriesChartInstance && timeSeriesChartInstance.config.type === desiredType) {
+                timeSeriesChartInstance.data.datasets = datasets;
+                timeSeriesChartInstance.options = chartOptions;
+                timeSeriesChartInstance.update(updateMode);
+            } else {
+                if (timeSeriesChartInstance) timeSeriesChartInstance.destroy();
+                const timeSeriesCtx = document.getElementById('timeSeriesChart').getContext('2d');
+                timeSeriesChartInstance = new Chart(timeSeriesCtx, {
+                    type: desiredType,
+                    data: { datasets },
+                    options: chartOptions
+                });
+            }
 
             // Dismiss tooltip when the user taps anywhere outside the chart.
             // On touch, Chart.js pins the tooltip on tap; without this the tooltip
@@ -1606,12 +1645,25 @@
             timeseriesEndIdx = maxIdx;
             document.getElementById('timeseries-start-slider').value = startIdx;
             document.getElementById('timeseries-end-slider').value = maxIdx;
+            document.querySelectorAll('.preset-chips button').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.trim() === (years === 'all' ? 'All' : `${years}Y`));
+            });
             updateDateDisplays();
-            updateTimeSeriesChart();
+            updateTimeSeriesChart('none');
         }
 
+        let sharingChart = false;
         async function shareChart() {
-            if (!timeSeriesChartInstance) return;
+            if (!timeSeriesChartInstance || sharingChart) return;
+            sharingChart = true;
+
+            const shareBtn = document.querySelector('.share-chart-btn-prominent');
+            const originalLabel = shareBtn ? shareBtn.innerHTML : '';
+            if (shareBtn) {
+                shareBtn.disabled = true;
+                shareBtn.innerHTML = '<span class="share-icon">↗</span> Preparing…';
+            }
+            try {
 
             const sourceCanvas = document.getElementById('timeSeriesChart');
             const title = document.getElementById('chartTitle').textContent.trim();
@@ -1680,6 +1732,13 @@
             a.download = filename;
             a.click();
             URL.revokeObjectURL(url);
+            } finally {
+                if (shareBtn) {
+                    shareBtn.disabled = false;
+                    shareBtn.innerHTML = originalLabel;
+                }
+                sharingChart = false;
+            }
         }
 
         function toggleDescription() {
@@ -1702,7 +1761,12 @@
         let sliderDebounceTimer = null;
         function scheduleTimeSeriesUpdate() {
             clearTimeout(sliderDebounceTimer);
-            sliderDebounceTimer = setTimeout(updateTimeSeriesChart, 50);
+            // Slider drags change the point count each frame — snap rather than tween,
+            // otherwise Chart.js interpolates between mismatched arrays and stutters.
+            sliderDebounceTimer = setTimeout(() => {
+                document.querySelectorAll('.preset-chips button.active').forEach(b => b.classList.remove('active'));
+                updateTimeSeriesChart('none');
+            }, 50);
         }
 
         document.getElementById('timeseries-start-slider').addEventListener('input', (e) => {
