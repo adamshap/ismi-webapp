@@ -116,6 +116,7 @@
 
         .charts {
             flex: 1;
+            min-width: 0; /* allow the chart column to shrink below content width so the canvas resizes when the window narrows */
             display: flex;
             flex-direction: column;
             gap: 30px;
