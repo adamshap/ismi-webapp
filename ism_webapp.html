@@ -526,9 +526,14 @@
             color: white;
         }
 
-        .chart-type-toggle button:hover:not(.active),
-        .chart-type-toggle button:active:not(.active) {
+        .chart-type-toggle button:hover:not(.active):not(:disabled),
+        .chart-type-toggle button:active:not(.active):not(:disabled) {
             background: #f0f4fa;
+        }
+
+        .chart-type-toggle button:disabled {
+            color: #b8c2cf;
+            cursor: not-allowed;
         }
 
         .share-chart-btn-prominent {
@@ -1197,6 +1202,7 @@
                 document.getElementById('timeseries-end-slider').value = timeseriesEndIdx;
 
                 updateDateDisplays();
+                syncChartTypeAvailability();
                 updateCharts();
             } catch (error) {
                 console.error('Error loading data:', error);
@@ -1274,7 +1280,8 @@
                     : `${baseTitle} — ${titleParts.join(', ')}`;
             }
 
-            // Legend is only useful when there are multiple lines to distinguish
+            // Legend is only useful when there are multiple lines to distinguish; the
+            // lone ISMI view identifies its series via the chart title instead.
             const showLegend = compareSeriesToggle || series === 'components' || series === 'components_only' || showPCE;
 
             let compareDiffCol = null;
@@ -1340,9 +1347,8 @@
 
             // Show ISMI line only if not "components_only"
             if (series !== 'components_only') {
-                const primaryLabel = compareSeriesToggle
-                    ? `ISMI - ${seriesLabels[inflationSeries]}`
-                    : 'ISMI';
+                // Always name the series in the legend (e.g. "ISMI - Core").
+                const primaryLabel = `ISMI - ${seriesLabels[inflationSeries]}`;
 
                 datasets.push({
                     label: primaryLabel,
@@ -1391,16 +1397,17 @@
             }
 
             if (chartType === 'bar') {
-                // Net ISMI renders as bars, but keep the compare-series / PCE overlays
-                // as LINES on top (Chart.js mixed chart) so those toggles still work in
-                // bar mode. Lower `order` draws on top: lines above bars.
+                // Net ISMI renders as bars, with the components / compare-series / PCE
+                // overlays as LINES on top (Chart.js mixed chart) so those options still
+                // work in bar mode. Lower `order` draws on top: lines above bars.
+                // (Bar is disabled for "Components Only", so series is 'diff' or 'components'.)
                 const barColors = ismi.map(v => v >= 0 ? COLOR_BAR_POS : COLOR_BAR_NEG);
                 datasets.length = 0;
+
                 datasets.push({
                     type: 'bar',
-                    // When comparing, name the primary series so the legend disambiguates
-                    // the bars from the overlaid compare line (matches line-mode behavior).
-                    label: compareSeriesToggle ? `ISMI - ${seriesLabels[inflationSeries]}` : 'ISMI',
+                    // Always name the series in the legend (e.g. "ISMI - Core").
+                    label: `ISMI - ${seriesLabels[inflationSeries]}`,
                     data: dates.map((date, i) => ({ x: date, y: ismi[i] })),
                     backgroundColor: barColors,
                     borderColor: barColors,
@@ -1408,6 +1415,38 @@
                     yAxisID: 'y',
                     order: 3
                 });
+
+                // Positive / Negative momentum component lines.
+                if (series === 'components') {
+                    datasets.push({
+                        type: 'line',
+                        label: 'Positive Momentum',
+                        data: dates.map((date, i) => ({ x: date, y: ismiPos[i] })),
+                        borderColor: COLOR_POSITIVE,
+                        backgroundColor: COLOR_POSITIVE,
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.1,
+                        yAxisID: 'y',
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        order: 2
+                    });
+                    datasets.push({
+                        type: 'line',
+                        label: 'Negative Momentum',
+                        data: dates.map((date, i) => ({ x: date, y: ismiNeg[i] })),
+                        borderColor: COLOR_NEGATIVE,
+                        backgroundColor: COLOR_NEGATIVE,
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.1,
+                        yAxisID: 'y',
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        order: 2
+                    });
+                }
 
                 if (compareSeriesToggle && compareIsmi) {
                     datasets.push({
@@ -1610,6 +1649,7 @@
             document.getElementById('timeseries-end-slider').value = maxIdx;
 
             updateDateDisplays();
+            syncChartTypeAvailability();
             updateCharts();
         }
 
@@ -1617,7 +1657,10 @@
         document.getElementById('k-select').addEventListener('change', updateCharts);
         document.getElementById('ar-select').addEventListener('change', updateCharts);
         document.getElementById('inflation-series-select').addEventListener('change', updateCharts);
-        document.getElementById('series-select').addEventListener('change', updateCharts);
+        document.getElementById('series-select').addEventListener('change', () => {
+            syncChartTypeAvailability();
+            updateCharts();
+        });
         document.getElementById('show-pce').addEventListener('change', updateCharts);
         document.getElementById('compare-series-toggle').addEventListener('change', toggleCompareSeriesDropdown);
         document.getElementById('compare-series-select').addEventListener('change', updateCharts);
@@ -1671,11 +1714,28 @@
         }
 
         function setChartType(type) {
+            // Ignore clicks on a disabled type (e.g. Bar while Components Only is active).
+            const btnForType = document.querySelector(`.chart-type-toggle button[data-type="${type}"]`);
+            if (btnForType && btnForType.disabled) return;
             chartType = type;
             document.querySelectorAll('.chart-type-toggle button').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.type === type);
             });
             updateTimeSeriesChart();
+        }
+
+        // "Components Only" has no net ISMI value, so Bar makes no sense there:
+        // disable the Bar toggle (and snap back to Line if it was active).
+        function syncChartTypeAvailability() {
+            const series = document.getElementById('series-select').value;
+            const barBtn = document.querySelector('.chart-type-toggle button[data-type="bar"]');
+            if (!barBtn) return;
+            const barDisabled = (series === 'components_only');
+            barBtn.disabled = barDisabled;
+            barBtn.title = barDisabled ? 'Bar view is unavailable for "Components Only"' : '';
+            if (barDisabled && chartType === 'bar') {
+                setChartType('line');
+            }
         }
 
         function setDateRange(years) {
