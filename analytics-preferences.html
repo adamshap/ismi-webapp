@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Exclude my visits</title>
+<style>body{font:18px/1.6 system-ui,sans-serif;color:#26343c;max-width:640px;margin:64px auto;padding:0 24px}h1{font-size:28px;line-height:1.3}button{font:600 17px system-ui;padding:14px 22px;background:#164f7e;color:white;border:0;border-radius:5px;cursor:pointer}button:disabled{background:#496b58;cursor:default}#status{font-weight:600}small{display:block;margin-top:24px;color:#59666e}</style>
+<script>window.goatcounter={no_onload:true};</script></head><body>
+<h1>Exclude my visits</h1>
+<p>These settings apply to both the ISMI and Supply &amp; Demand dashboards on adamshap.github.io in this browser.</p>
+<p id="status" role="status">Checking your setting…</p>
+<button id="exclude" type="button">Exclude my visits</button>
+<p id="verified"></p>
+<small>The exclusion continues working when your IP changes. Set it separately on other browsers and devices. Clearing this site's browser data removes the setting. Previously recorded visits remain in your statistics.</small>
+<script>
+function showStatus(){
+ try{
+  const excluded=localStorage.getItem('skipgc')==='t';
+  document.getElementById('status').textContent=excluded?'Your visits are excluded.':'Your browser is not excluded yet.';
+  document.getElementById('exclude').disabled=excluded;
+  document.getElementById('exclude').textContent=excluded?'Visits excluded':'Exclude my visits';
+  const filter=window.goatcounter.filter;
+  const blocked=typeof filter==='function' && filter()==='disabled with #toggle-goatcounter';
+  document.getElementById('verified').textContent=blocked?'Verified: GoatCounter blocks tracking from this browser.':excluded?'Exclusion saved. Waiting for GoatCounter verification…':'';
+ }catch(error){document.getElementById('status').textContent='Browser storage is unavailable. The exclusion could not be verified.';}
+}
+document.getElementById('exclude').addEventListener('click',()=>{
+ try{localStorage.setItem('skipgc','t');showStatus();}
+ catch(error){document.getElementById('status').textContent='This browser did not allow the exclusion to be saved.';}
+});
+showStatus();
+</script>
+<script data-goatcounter="https://ismi.goatcounter.com/count" async src="https://gc.zgo.at/count.js" onload="showStatus()"></script>
+</body></html>
