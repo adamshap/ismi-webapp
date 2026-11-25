@@ -536,6 +536,31 @@
             cursor: not-allowed;
         }
 
+        .chart-share-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .chart-share-actions .share-chart-btn-prominent {
+            margin: 0;
+            width: auto;
+            min-height: 44px;
+        }
+
+        .chart-share-help,
+        .chart-share-status {
+            margin: 8px 0 0;
+            text-align: center;
+            color: #6b7280;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .chart-share-status:empty { display: none; }
+
         .share-chart-btn-prominent {
             display: flex;
             align-items: center;
@@ -568,6 +593,16 @@
         .share-chart-btn-prominent .share-icon {
             font-size: 16px;
             line-height: 1;
+        }
+
+        .share-chart-btn-prominent.save-chart-btn {
+            background: white;
+            color: #004C97;
+            box-shadow: inset 0 0 0 1px #004C97;
+        }
+
+        .share-chart-btn-prominent.save-chart-btn:hover {
+            background: #f0f4fa;
         }
 
         .description-more-btn {
@@ -1071,9 +1106,16 @@
                 <canvas id="timeSeriesChart"></canvas>
             </div>
 
-            <button type="button" class="share-chart-btn-prominent" onclick="shareChart()">
-                <span class="share-icon">↗</span> Share This Chart
-            </button>
+            <div class="chart-share-actions">
+                <button id="share-chart-btn" type="button" class="share-chart-btn-prominent" onclick="shareChart()">
+                    <span class="share-icon" aria-hidden="true">↗</span> Share This Chart
+                </button>
+                <button id="save-chart-image-btn" type="button" class="share-chart-btn-prominent save-chart-btn" onclick="shareChart('download')" aria-describedby="chart-share-help">
+                    Save PNG
+                </button>
+            </div>
+            <p id="chart-share-help" class="chart-share-help">For LinkedIn, save the image, then attach it to your post.</p>
+            <p id="chart-share-status" class="chart-share-status" role="status"></p>
         </div>
 
             </main>
@@ -1759,12 +1801,16 @@
         }
 
         let sharingChart = false;
-        async function shareChart() {
+        async function shareChart(action = 'share') {
             if (!timeSeriesChartInstance || sharingChart) return;
             sharingChart = true;
 
-            const shareBtn = document.querySelector('.share-chart-btn-prominent');
+            const shareBtn = document.getElementById(action === 'download' ? 'save-chart-image-btn' : 'share-chart-btn');
+            const buttons = document.querySelectorAll('.chart-share-actions button');
+            const status = document.getElementById('chart-share-status');
             const originalLabel = shareBtn ? shareBtn.innerHTML : '';
+            buttons.forEach(button => { button.disabled = true; });
+            if (status) status.textContent = '';
             if (shareBtn) {
                 shareBtn.disabled = true;
                 shareBtn.innerHTML = '<span class="share-icon">↗</span> Preparing…';
@@ -1777,7 +1823,12 @@
             const endDate = document.getElementById('timeseries-end').textContent;
 
             const w = sourceCanvas.width;
-            const footerHeight = 50;
+            const footerLines = w < 700
+                ? ['Lansing and Shapiro (2026)', 'Federal Reserve Bank of San Francisco', `Data through ${endDate}`]
+                : [`Lansing and Shapiro (2026)  •  Federal Reserve Bank of San Francisco  •  Data through ${endDate}`];
+            const footerFontSize = w < 700 ? 12 : 14;
+            const footerLineHeight = Math.round(footerFontSize * 1.5);
+            const footerHeight = footerLines.length * footerLineHeight + 20;
             const titleFont = (px) => `bold ${px}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
 
             const out = document.createElement('canvas');
@@ -1810,23 +1861,25 @@
             ctx.drawImage(sourceCanvas, 0, titleHeight);
 
             ctx.fillStyle = '#666';
-            ctx.font = '14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-            ctx.fillText(`Lansing and Shapiro (2026)  •  Federal Reserve Bank of San Francisco  •  Data through ${endDate}`, w / 2, titleHeight + sourceCanvas.height + 30);
+            ctx.font = `${footerFontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+            footerLines.forEach((line, index) => {
+                ctx.fillText(line, w / 2, titleHeight + sourceCanvas.height + 10 + (index + 1) * footerLineHeight);
+            });
 
             const blob = await new Promise(resolve => out.toBlob(resolve, 'image/png'));
+            if (!blob) throw new Error('The chart image could not be created.');
             const filename = `ismi_${startDate}_to_${endDate}.png`;
-            const file = new File([blob], filename, { type: 'image/png' });
-
-            const shareData = {
-                files: [file],
-                title: title,
-                text: `${title} — Lansing and Shapiro (2026)`
-            };
-
-            if (navigator.canShare && navigator.canShare(shareData)) {
+            if (action === 'share' && navigator.canShare && navigator.share) {
                 try {
-                    await navigator.share(shareData);
-                    return;
+                    const file = new File([blob], filename, { type: 'image/png' });
+                    if (navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                            files: [file],
+                            title: title,
+                            text: `${title} — Lansing and Shapiro (2026)`
+                        });
+                        return;
+                    }
                 } catch (err) {
                     if (err.name === 'AbortError') return;
                 }
@@ -1836,9 +1889,16 @@
             const a = document.createElement('a');
             a.href = url;
             a.download = filename;
+            document.body.appendChild(a);
             a.click();
-            URL.revokeObjectURL(url);
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            if (status) status.textContent = 'Chart image downloaded.';
+            } catch (err) {
+                if (status) status.textContent = 'Unable to prepare the chart image. Please try again.';
+                console.error('Chart image export failed:', err);
             } finally {
+                buttons.forEach(button => { button.disabled = false; });
                 if (shareBtn) {
                     shareBtn.disabled = false;
                     shareBtn.innerHTML = originalLabel;
