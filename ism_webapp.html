@@ -1798,6 +1798,43 @@
             updateTimeSeriesChart('none');
         }
 
+        // Render from the selected data at a fixed size; never enlarge a phone screenshot.
+        function renderExportChart(liveChart) {
+            const copy = value => {
+                if (Array.isArray(value)) return value.map(copy);
+                if (value && Object.getPrototypeOf(value) === Object.prototype) {
+                    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, copy(item)]));
+                }
+                return value;
+            };
+            const canvas = document.createElement('canvas');
+            canvas.width = 1200;
+            canvas.height = 680;
+            const data = copy(liveChart.data);
+            data.datasets.forEach((dataset, index) => {
+                dataset.hidden = !liveChart.isDatasetVisible(index);
+            });
+            const options = copy(liveChart.config.options);
+            Object.assign(options, {
+                responsive: false, maintainAspectRatio: false,
+                animation: false, events: [], devicePixelRatio: 2
+            });
+            options.plugins.legend.position = 'bottom';
+            options.plugins.legend.labels = {
+                ...options.plugins.legend.labels,
+                font: { size: 16 }, boxWidth: 18, padding: 18
+            };
+            options.plugins.tooltip.enabled = false;
+            for (const scale of Object.values(options.scales)) {
+                if (!scale) continue;
+                scale.ticks = { ...scale.ticks, font: { size: 14 } };
+                if (scale.title) scale.title.font = { size: 16 };
+            }
+            return new Chart(canvas, {
+                type: liveChart.config.type, data, options
+            });
+        }
+
         let sharingChart = false;
         async function shareChart(action = 'share') {
             if (!timeSeriesChartInstance || sharingChart) return;
@@ -1813,24 +1850,28 @@
                 shareBtn.disabled = true;
                 shareBtn.innerHTML = '<span class="share-icon">↗</span> Preparing…';
             }
+            let exportChart;
             try {
 
-            const sourceCanvas = document.getElementById('timeSeriesChart');
+            exportChart = renderExportChart(timeSeriesChartInstance);
+            const sourceCanvas = exportChart.canvas;
+            const scale = 2;
             const title = document.getElementById('chartTitle').textContent.trim();
             const startDate = document.getElementById('timeseries-start').textContent;
             const endDate = document.getElementById('timeseries-end').textContent;
 
-            const w = sourceCanvas.width;
+            const w = sourceCanvas.width / scale;
+            const h = sourceCanvas.height / scale;
             const footerLines = w < 700
                 ? ['Lansing and Shapiro (2026)', 'Federal Reserve Bank of San Francisco', `Data through ${endDate}`]
                 : [`Lansing and Shapiro (2026)  •  Federal Reserve Bank of San Francisco  •  Data through ${endDate}`];
-            const footerFontSize = w < 700 ? 12 : 14;
+            const footerFontSize = 18;
             const footerLineHeight = Math.round(footerFontSize * 1.5);
             const footerHeight = footerLines.length * footerLineHeight + 20;
             const titleFont = (px) => `bold ${px}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
 
             const out = document.createElement('canvas');
-            out.width = w;
+            out.width = w * scale;
             const ctx = out.getContext('2d');
 
             // Fit title to canvas width. measureText scales ~linearly with font size,
@@ -1844,7 +1885,8 @@
             }
             const titleHeight = Math.round(titleFontSize * 2.2);
             // Setting canvas.height resets context state — assign it before re-applying font.
-            out.height = sourceCanvas.height + titleHeight + footerHeight;
+            out.height = (h + titleHeight + footerHeight) * scale;
+            ctx.scale(scale, scale);
             ctx.font = titleFont(titleFontSize);
 
             ctx.fillStyle = 'white';
@@ -1856,12 +1898,12 @@
             ctx.fillText(title, w / 2, titleHeight / 2);
             ctx.textBaseline = 'alphabetic';
 
-            ctx.drawImage(sourceCanvas, 0, titleHeight);
+            ctx.drawImage(sourceCanvas, 0, titleHeight, w, h);
 
             ctx.fillStyle = '#666';
             ctx.font = `${footerFontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
             footerLines.forEach((line, index) => {
-                ctx.fillText(line, w / 2, titleHeight + sourceCanvas.height + 10 + (index + 1) * footerLineHeight);
+                ctx.fillText(line, w / 2, titleHeight + h + 10 + (index + 1) * footerLineHeight);
             });
 
             const blob = await new Promise(resolve => out.toBlob(resolve, 'image/png'));
@@ -1896,6 +1938,7 @@
                 if (status) status.textContent = 'Unable to prepare the chart image. Please try again.';
                 console.error('Chart image export failed:', err);
             } finally {
+                if (exportChart) exportChart.destroy();
                 buttons.forEach(button => { button.disabled = false; });
                 if (shareBtn) {
                     shareBtn.disabled = false;
