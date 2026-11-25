@@ -550,7 +550,6 @@
             min-height: 44px;
         }
 
-        .chart-share-help,
         .chart-share-status {
             margin: 8px 0 0;
             text-align: center;
@@ -1110,11 +1109,10 @@
                 <button id="share-chart-btn" type="button" class="share-chart-btn-prominent" onclick="shareChart()">
                     <span class="share-icon" aria-hidden="true">↗</span> Share This Chart
                 </button>
-                <button id="save-chart-image-btn" type="button" class="share-chart-btn-prominent save-chart-btn" onclick="shareChart('download')" aria-describedby="chart-share-help">
+                <button id="save-chart-image-btn" type="button" class="share-chart-btn-prominent save-chart-btn" onclick="shareChart('download')">
                     Save PNG
                 </button>
             </div>
-            <p id="chart-share-help" class="chart-share-help">For LinkedIn, save the image, then attach it to your post.</p>
             <p id="chart-share-status" class="chart-share-status" role="status"></p>
         </div>
 
