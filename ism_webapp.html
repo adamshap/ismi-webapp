@@ -144,26 +144,6 @@
             .stat-label { font-size: 11px; }
             .chart-wrapper { height: 280px; }
         }
-        .mobile-image-label, .photo-save-hint { display: none; }
-        .chart-image-dialog { width: min(640px, calc(100% - 28px)); max-height: calc(100dvh - 32px); margin: auto; padding: 20px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: white; overflow: auto; }
-        .chart-image-dialog::backdrop { background: rgb(20 35 50 / 45%); }
-        .image-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
-        .image-dialog-header h2 { font-size: 18px; font-weight: 600; }
-        .image-dialog-close { min-width: 44px; min-height: 44px; border: 0; background: var(--wash); border-radius: 5px; color: var(--ink); font-size: 14px; }
-        .image-save-help, .image-save-status { color: var(--muted); font-size: 14px; line-height: 1.5; }
-        .chart-image-dialog img { display: block; width: 100%; height: auto; margin: 14px 0; -webkit-touch-callout: default; user-select: auto; }
-        .image-dialog-actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-        .image-native-share { min-height: 44px; padding: 10px 16px; border: 0; border-radius: 5px; background: var(--blue); color: white; font-weight: 600; }
-        .image-native-share[hidden] { display: none; }
-        .image-dialog-download { padding: 10px 0; color: var(--blue); font-size: 14px; }
-        .image-save-status { margin-top: 8px; }
-        .image-save-status:empty { display: none; }
-        @media (max-width: 768px) {
-            .desktop-image-label { display: none; }
-            .mobile-image-label { display: inline; }
-            #share-chart-btn { background: var(--blue); color: white; padding: 9px 13px; border-radius: 5px; }
-            .photo-save-hint { display: block; color: var(--muted); font-size: 13px; margin-top: 6px; }
-        }
     </style>
 </head>
 <body>
@@ -336,17 +316,16 @@
 
             <div class="chart-share-actions">
                 <button id="share-chart-btn" type="button" class="share-chart-btn-prominent" onclick="shareChart()">
-                    <span class="desktop-image-label">Share This Chart</span><span class="mobile-image-label">Save / share PNG</span>
+                    <span class="share-icon" aria-hidden="true">↗</span> Share This Chart
                 </button>
                 <button id="save-chart-image-btn" type="button" class="share-chart-btn-prominent save-chart-btn" onclick="shareChart('download')">
-                    <span class="desktop-image-label">Save PNG</span><span class="mobile-image-label">Download PNG</span>
+                    Save PNG
                 </button>
                 <button id="download-full-btn-sidebar" class="download-btn" title="Download the full dataset with all series">
                         All data (Excel)
                     </button><button id="download-view-btn-sidebar" class="download-btn" title="Download data for the selected chart view">
                         Chart data (CSV)
                     </button></div>
-            <p class="photo-save-hint">On iPhone, choose Save Image in the share menu to add the chart to Photos.</p>
             <p id="chart-share-status" class="chart-share-status" role="status"></p>
         </div>
 
@@ -357,20 +336,6 @@
             Lansing and Shapiro (2026) · Data source: Bureau of Economic Analysis · Updated monthly
         </footer>
     </div>
-
-    <dialog id="chart-image-dialog" class="chart-image-dialog" aria-labelledby="chart-image-heading" aria-describedby="image-save-help">
-        <div class="image-dialog-header">
-            <h2 id="chart-image-heading">Save chart image</h2>
-            <button type="button" class="image-dialog-close" onclick="document.getElementById('chart-image-dialog').close()" autofocus>Close</button>
-        </div>
-        <p id="image-save-help" class="image-save-help"></p>
-        <img id="chart-image-preview" alt="High-resolution PNG of your selected ISMI chart">
-        <div class="image-dialog-actions">
-            <button type="button" id="image-native-share" class="image-native-share" onclick="sharePreparedChart()">Open share menu</button>
-            <a id="image-dialog-download" class="image-dialog-download">Download PNG</a>
-        </div>
-        <p id="image-save-status" class="image-save-status" role="status"></p>
-    </dialog>
 
     <script>
         // Mobile controls toggle — caret rotation is handled by CSS
@@ -1097,83 +1062,6 @@
             });
         }
 
-        function canShareChartImage(file) {
-            try {
-                return typeof navigator.share === 'function' && typeof navigator.canShare === 'function'
-                    && navigator.canShare({ files: [file] });
-            } catch { return false; }
-        }
-
-        let preparedChartImage = null;
-        function openChartImagePreview(file, title) {
-            const dialog = document.getElementById('chart-image-dialog');
-            preparedChartImage = { file, title, url: URL.createObjectURL(file) };
-            document.getElementById('chart-image-preview').src = preparedChartImage.url;
-            const download = document.getElementById('image-dialog-download');
-            download.href = preparedChartImage.url;
-            download.download = file.name;
-            const shareable = canShareChartImage(file);
-            document.getElementById('image-native-share').hidden = !shareable;
-            document.getElementById('image-save-help').textContent = shareable
-                ? 'Open the share menu. On iPhone, choose Save Image to add the chart to Photos.'
-                : 'Touch and hold the image for saving options, or use Download PNG.';
-            document.getElementById('image-save-status').textContent = '';
-            dialog.showModal();
-        }
-
-        async function sharePreparedChart() {
-            if (!preparedChartImage) return;
-            const button = document.getElementById('image-native-share');
-            const status = document.getElementById('image-save-status');
-            button.disabled = true;
-            status.textContent = '';
-            try {
-                // Invoke directly from this fresh tap, before any asynchronous work.
-                await navigator.share({ files: [preparedChartImage.file], title: preparedChartImage.title });
-                document.getElementById('chart-image-dialog').close();
-            } catch (error) {
-                if (error.name !== 'AbortError') status.textContent = 'Touch and hold the image for saving options, or use Download PNG.';
-            } finally { button.disabled = false; }
-        }
-
-        document.getElementById('chart-image-dialog').addEventListener('close', () => {
-            if (preparedChartImage) URL.revokeObjectURL(preparedChartImage.url);
-            preparedChartImage = null;
-            document.getElementById('chart-image-preview').removeAttribute('src');
-            document.getElementById('image-dialog-download').removeAttribute('href');
-        });
-
-        async function deliverChartImage(blob, filename, title, action) {
-            const file = new File([blob], filename, { type: 'image/png' });
-            const mobile = window.matchMedia('(max-width: 768px)').matches;
-            if (action === 'share') {
-                if (canShareChartImage(file)) {
-                    try {
-                        await navigator.share({ files: [file], title });
-                        return;
-                    } catch (error) {
-                        // Cancelling the share menu must never start an unwanted download.
-                        if (error.name === 'AbortError') return;
-                    }
-                }
-                if (mobile) {
-                    // Keep the original PNG available for long-press saving, or a
-                    // fresh tap if generating it exhausted browser user activation.
-                    openChartImagePreview(file, title);
-                    return;
-                }
-            }
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
-            document.getElementById('chart-share-status').textContent = 'Chart image downloaded.';
-        }
-
         let sharingChart = false;
         async function shareChart(action = 'share') {
             if (!timeSeriesChartInstance || sharingChart) return;
@@ -1250,7 +1138,31 @@
             const blob = await new Promise(resolve => out.toBlob(resolve, 'image/png'));
             if (!blob) throw new Error('The chart image could not be created.');
             const filename = `ismi_${startDate}_to_${endDate}.png`;
-            await deliverChartImage(blob, filename, title, action);
+            if (action === 'share' && navigator.canShare && navigator.share) {
+                try {
+                    const file = new File([blob], filename, { type: 'image/png' });
+                    if (navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                            files: [file],
+                            title: title,
+                            text: `${title} — Lansing and Shapiro (2026)`
+                        });
+                        return;
+                    }
+                } catch (err) {
+                    if (err.name === 'AbortError') return;
+                }
+            }
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            if (status) status.textContent = 'Chart image downloaded.';
             } catch (err) {
                 if (status) status.textContent = 'Unable to prepare the chart image. Please try again.';
                 console.error('Chart image export failed:', err);
