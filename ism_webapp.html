@@ -1206,9 +1206,8 @@
 
         async function loadData() {
             try {
-                const now = new Date();
-                const cacheBuster = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-                const response = await fetch(`ism_data.csv?v=${cacheBuster}`);
+                const cacheBuster = Date.now();
+                const response = await fetch(`ism_data.csv?v=${cacheBuster}`, { cache: 'no-store' });
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }

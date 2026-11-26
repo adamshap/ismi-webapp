@@ -1,5 +1,8 @@
 from pathlib import Path
 import sys
+import json
+import hashlib
+import shutil
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -9,8 +12,8 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'automation'))
 from engine import calculate, combine, groups, rebuild_required
-from bea import inputs, to_panel
-from update import run, write_excel
+from bea import inputs, to_panel, fingerprint
+from update import run, write_excel, MODEL_VERSION
 
 class PipelineTests(unittest.TestCase):
     @classmethod
@@ -67,6 +70,31 @@ class PipelineTests(unittest.TestCase):
         with self.assertRaises(ValueError): calculate(broken,self.categories,[801])
         broken = self.panel.copy(); broken.loc[800,'pce_spend'] = np.nan
         with self.assertRaises(ValueError): calculate(broken,self.categories,[801])
+
+    def test_noop_and_forced_rebuild(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root/'automation').mkdir()
+            shutil.copyfile(ROOT/'automation/categories.csv',root/'automation/categories.csv')
+            baseline = pd.read_csv(ROOT/'ism_data.csv')
+            baseline[baseline.date <= '2026-10'].to_csv(root/'ism_data.csv',index=False)
+            state = {'model_version': MODEL_VERSION, 'probe_sha256': fingerprint(self.panel),
+                     'published_csv_sha256': hashlib.sha256((root/'ism_data.csv').read_bytes()).hexdigest()}
+            (root/'automation/state.json').write_text(json.dumps(state))
+            before = (root/'ism_data.csv').read_bytes()
+            with patch('update.BeaClient'), patch('update.inputs', return_value=self.panel):
+                report = run(root,'update',False,None,root/'out')
+                self.assertEqual(report['status'],'unchanged')
+                self.assertFalse((root/'out').exists())
+                with patch('update.calculate',side_effect=RuntimeError('forced calculation')):
+                    with self.assertRaisesRegex(RuntimeError,'forced calculation'):
+                        run(root,'update',True,None,root/'out')
+                (root/'ism_data.csv').write_bytes(before + b'\n')
+                with patch('update.calculate',side_effect=RuntimeError('baseline changed')):
+                    with self.assertRaisesRegex(RuntimeError,'baseline changed'):
+                        run(root,'update',False,None,root/'out')
+                (root/'ism_data.csv').write_bytes(before)
+            self.assertEqual(before,(root/'ism_data.csv').read_bytes())
 
     def test_download_failure_cannot_change_published_files(self):
         paths = [ROOT/'ism_data.csv',ROOT/'ismi_data.xlsx',ROOT/'automation/state.json']

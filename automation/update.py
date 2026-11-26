@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime, timezone
+import hashlib
+from io import BytesIO
 import json
 import os
 from pathlib import Path
@@ -45,9 +47,12 @@ def write_excel(frame: pd.DataFrame, path: Path) -> None:
 
 def run(root: Path, mode: str, full_history: bool, cached_inputs: Path | None, output: Path) -> dict:
     mapping = pd.read_csv(root / 'automation/categories.csv')
-    previous = pd.read_csv(root / 'ism_data.csv')
+    previous_bytes = (root / 'ism_data.csv').read_bytes()
+    previous = pd.read_csv(BytesIO(previous_bytes))
+    previous_hash = hashlib.sha256(previous_bytes).hexdigest()
     state_path = root / 'automation/state.json'
     state = json.loads(state_path.read_text()) if state_path.exists() else {}
+    baseline_changed = state.get('published_csv_sha256') != previous_hash
     previous_latest = previous.date.max()
     now = datetime.now(timezone.utc)
     probe_hash = None
@@ -73,7 +78,7 @@ def run(root: Path, mode: str, full_history: bool, cached_inputs: Path | None, o
         latest_probe = str(pd.Period('1960-01', freq='M') + int(probe.index.max()))
         if latest_probe < previous_latest:
             raise ValueError('BEA is serving an older release; refusing to roll back the dashboard')
-        if (mode == 'update' and not full_history and state.get('model_version') == MODEL_VERSION
+        if (mode == 'update' and not full_history and not baseline_changed and state.get('model_version') == MODEL_VERSION
                 and probe_hash == state.get('probe_sha256') and latest_probe == previous_latest):
             return {'status': 'unchanged', 'latest_month': previous_latest, 'changed': False, 'data_changed': False}
         print('Downloading full BEA history for current-vintage model inputs…', flush=True)
@@ -91,7 +96,7 @@ def run(root: Path, mode: str, full_history: bool, cached_inputs: Path | None, o
     latest_number = int(panel.index.max())
     latest = str(pd.Period('1960-01', freq='M') + latest_number)
     full = rebuild_required(previous_latest, latest, mode == 'benchmark' or full_history
-                            or state.get('model_version') != MODEL_VERSION)
+                            or state.get('model_version') != MODEL_VERSION or baseline_changed)
     first_number = (pd.Period(previous.date.min(), freq='M') - pd.Period('1960-01', freq='M')).n if full else latest_number - 15
     dates = list(range(first_number, latest_number + 1))
     print(f'Calculating {len(dates)} months; {"full September benchmark" if full else "last 16 months"}; latest {latest}', flush=True)
@@ -130,10 +135,13 @@ def run(root: Path, mode: str, full_history: bool, cached_inputs: Path | None, o
             updated_state = {
                 'latest_month': latest, 'probe_sha256': probe_hash, 'inputs_sha256': fingerprint(panel),
                 'model_version': MODEL_VERSION,
+                'published_csv_sha256': hashlib.sha256((temp / 'ism_data.csv').read_bytes()).hexdigest() if data_changed else previous_hash,
                 'last_full_rebuild_data_month': latest if full else state.get('last_full_rebuild_data_month'),
                 'last_successful_change_utc': now.isoformat(),
             }
             # No on-disk changes happen until download, calculation and both exports pass.
+            if (root / 'ism_data.csv').read_bytes() != previous_bytes:
+                raise ValueError('Dashboard CSV changed during calculation; refusing to overwrite concurrent edits')
             if data_changed:
                 for name in ('ism_data.csv', 'ismi_data.xlsx'):
                     (temp / name).replace(root / name)
