@@ -113,7 +113,7 @@
             .stat-box { padding: 0 12px; gap: 7px; }
             .stat-label { font-size: 12px; min-height: 2.7em; }
             .stat-value { font-size: 23px; }
-            .mobile-toggle { display: flex; width: 100%; background: white; border: 0; padding: 8px 0; min-height: 42px; }
+            .mobile-toggle { display: flex; width: 100%; background: var(--blue); color: white; border: 1px solid var(--blue); padding: 10px 14px; min-height: 44px; font-weight: 600; }
             .controls-section { padding-bottom: 4px; position: static; }
             .controls-section.collapsed .controls-content { display: none; }
             .controls-section:not(.collapsed) .controls-content { padding: 8px 0 12px; }
@@ -305,8 +305,8 @@
             </div>
 
             <div class="chart-type-toggle">
-                <button type="button" class="active" data-type="line" onclick="setChartType('line')">Line</button>
-                <button type="button" data-type="bar" onclick="setChartType('bar')">Bar</button>
+                <button type="button" data-type="line" onclick="setChartType('line')">Line</button>
+                <button type="button" class="active" data-type="bar" onclick="setChartType('bar')">Bar</button>
             </div>
 
             </div><!-- chart toolbar -->
@@ -390,7 +390,7 @@
         });
 
         let allData = [];
-        let chartType = 'line';
+        let chartType = 'bar';
         let timeseriesStartIdx = 0;
         let timeseriesEndIdx = 0;
         let timeSeriesChartInstance = null;
@@ -899,6 +899,11 @@
             document.getElementById('compare-series-toggle').checked = false;  // Comparison off
             document.getElementById('compare-series-select').value = '';  // Reset to Headline
             document.getElementById('compare-series-dropdown').classList.add('hidden');  // Hide dropdown
+
+            chartType = 'bar';
+            document.querySelectorAll('.chart-type-toggle button').forEach(button => {
+                button.classList.toggle('active', button.dataset.type === chartType);
+            });
 
             // Restore the default five-year view
             const maxIdx = allData.length - 1;
