@@ -145,17 +145,34 @@
             .stat-label { font-size: 11px; }
             .chart-wrapper { height: 280px; }
         }
+        .header-layout { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px 24px; align-items: start; }
+        .header-copy { min-width: 0; }
+        .data-downloads { display: flex; gap: 8px; flex-wrap: wrap; max-width: 310px; }
+        .download-caption { flex-basis: 100%; font-size: 12px; color: var(--muted); margin-bottom: 1px; }
+        .desktop-data-slot .download-btn { min-height: 40px; padding: 8px 12px; border: 1px solid var(--blue); border-radius: 5px; font-size: 13px; font-weight: 500; background: white; color: var(--blue); white-space: nowrap; }
+        .desktop-data-slot .download-btn:first-of-type { background: var(--blue); color: white; }
+        .mobile-data-slot { display: contents; }
+        @media (max-width: 768px) {
+            .header-layout { display: block; }
+            .desktop-data-slot { display: none; }
+            .data-downloads { display: contents; }
+            .download-caption { display: none; }
+            .chart-share-actions { display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 6px; }
+            .chart-share-actions .share-chart-btn-prominent { min-width: 0; padding: 8px 4px; font-size: 12px; white-space: nowrap; }
+            .chart-share-actions .download-btn { min-width: 0; padding: 6px 0; font-size: 12px; white-space: nowrap; }
+        }
+        .data-refresh-status { flex-basis: 100%; font-size: 12px; color: var(--muted); }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Inflation Shock Momentum Index (ISMI)</h1>
+<div class="header-layout"><div class="header-copy">            <h1>Inflation Shock Momentum Index (ISMI)</h1>
             <div class="subtitle">Lansing and Shapiro (2026) | <a href="https://www.frbsf.org/wp-content/uploads/wp2026-10.pdf" target="_blank">Working Paper</a></div>
             <div class="data-update" id="dataUpdate" hidden>
                 <time id="lastUpdated" hidden></time>
-                <span id="dataThrough"></span>
-            </div>
+                <span id="dataThrough"></span><span id="dataRefreshStatus" class="data-refresh-status" role="status" hidden></span>
+            </div></div><div id="desktopDataDownloads" class="desktop-data-slot"></div></div>
         </header>
 
         <div class="description" id="description">
@@ -293,9 +310,9 @@
                 </div>
                 <div class="date-sliders">
                     <div class="slider-row">
-                        <div class="date-display" id="timeseries-start">1969-01</div>
+                        <div class="date-display" id="timeseries-start">—</div>
                         <input type="range" id="timeseries-start-slider" aria-label="Start date" min="0" max="100" value="0">
-                        <div class="date-display" id="timeseries-end">2026-06</div>
+                        <div class="date-display" id="timeseries-end">—</div>
                     </div>
                     <div class="slider-row">
                         <div class="date-label-inline">Start Date</div>
@@ -322,11 +339,11 @@
                 <button id="save-chart-image-btn" type="button" class="share-chart-btn-prominent save-chart-btn" onclick="shareChart('download')">
                     Save PNG
                 </button>
-                <button id="download-full-btn-sidebar" class="download-btn" title="Download the full dataset with all series">
+<div id="mobileDataDownloads" class="mobile-data-slot"><div id="dataDownloads" class="data-downloads" role="group" aria-label="Download data"><span class="download-caption">Download data</span>                <button id="download-full-btn-sidebar" class="download-btn" title="Download the full dataset with all series">
                         All data (Excel)
                     </button><button id="download-view-btn-sidebar" class="download-btn" title="Download data for the selected chart view">
                         Chart data (CSV)
-                    </button></div>
+                    </button></div></div></div>
             <p id="chart-share-status" class="chart-share-status" role="status"></p>
         </div>
 
@@ -339,6 +356,58 @@
     </div>
 
     <script>
+        // Every deployment publishes data under content-versioned URLs. Only the
+        // small manifest is polled; CSVs are fetched again when the release changes.
+        const RELEASE_FILES = ['ism_data.csv', 'ismi_data.xlsx', 'data-update.json'];
+        let activeDataRelease = null;
+        let refreshInProgress = false;
+        let lastDataCheck = 0;
+        let lastLoadedCsvText = '';
+
+        async function readPublishedDataRelease() {
+            const response = await fetch(`data-manifest.json?v=${Date.now()}`, {cache: 'no-store'});
+            if (response.status === 404) return null; // Unpackaged local previews.
+            if (!response.ok) throw new Error('Data release check failed.');
+            const release = await response.json();
+            if (!/^[a-f0-9]{64}$/.test(release.version) || !Number.isFinite(Date.parse(release.published_at)) || !release.files) throw new Error('Invalid data release.');
+            for (const name of RELEASE_FILES) {
+                if (release.files[name] !== `data/${release.version}/${name}`) throw new Error('Incomplete data release.');
+            }
+            return release;
+        }
+
+        function dataFileUrl(name, release = activeDataRelease) {
+            return release ? release.files[name] : `${name}?v=${Date.now()}`;
+        }
+
+        async function latestDataFileUrl(name) {
+            try {
+                const release = await readPublishedDataRelease();
+                if (release && (!activeDataRelease || Date.parse(release.published_at) >= Date.parse(activeDataRelease.published_at))) return dataFileUrl(name, release);
+                return dataFileUrl(name);
+            } catch { return `${name}?v=${Date.now()}`; }
+        }
+
+        async function fetchDataText(name, release) {
+            const response = await fetch(dataFileUrl(name, release), {cache: 'no-store'});
+            if (!response.ok) throw new Error(`Unable to load ${name}.`);
+            return response.text();
+        }
+
+        function setRefreshWarning(message = '') {
+            const element = document.getElementById('dataRefreshStatus');
+            if (element) { element.textContent = message; element.hidden = !message; }
+        }
+
+        function startDataRefresh(refresh) {
+            const check = () => { if (document.visibilityState === 'visible') refresh(); };
+            setInterval(check, 60_000);
+            document.addEventListener('visibilitychange', check);
+            window.addEventListener('focus', check);
+            window.addEventListener('online', check);
+            window.addEventListener('pageshow', event => { if (event.persisted) check(); });
+        }
+
         // Mobile controls toggle — caret rotation is handled by CSS
         // (.controls-section:not(.collapsed) .caret { transform: rotate(180deg) }).
         function toggleControls() {
@@ -379,11 +448,14 @@
             wasMobile = mobile;
             document.getElementById('controlsPanel').classList.toggle('collapsed', mobile);
             document.getElementById('mobileToggle').setAttribute('aria-expanded', String(!mobile));
+            const target = document.getElementById(mobile ? 'mobileDataDownloads' : 'desktopDataDownloads');
+            target.appendChild(document.getElementById('dataDownloads'));
         }
 
         // Run on load and (debounced) resize — mobile address-bar collapse fires
         // resize repeatedly, so we coalesce to one call per animation frame.
         window.addEventListener('load', checkScreenSize);
+        checkScreenSize();
         let resizeRaf = null;
         window.addEventListener('resize', () => {
             if (resizeRaf) return;
@@ -396,58 +468,77 @@
         let timeseriesEndIdx = 0;
         let timeSeriesChartInstance = null;
 
-        async function loadData() {
+        async function loadData(force = false) {
+            if (refreshInProgress || sharingChart || (!force && document.visibilityState === 'hidden')) return;
+            if (!force && Date.now() - lastDataCheck < 10_000) return;
+            refreshInProgress = true;
+            lastDataCheck = Date.now();
+            const initial = allData.length === 0;
             try {
-                const cacheBuster = Date.now();
-                const response = await fetch(`ism_data.csv?v=${cacheBuster}`, { cache: 'no-store' });
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                const release = await readPublishedDataRelease();
+                if (release && activeDataRelease && Date.parse(release.published_at) < Date.parse(activeDataRelease.published_at)) { setRefreshWarning(); return; }
+                if (release && activeDataRelease?.version === release.version) { setRefreshWarning(); return; }
+                const text = await fetchDataText('ism_data.csv', release);
+                if (!initial && text === lastLoadedCsvText) {
+                    activeDataRelease = release;
+                    await updateDataStatus();
+                    setRefreshWarning();
+                    return;
                 }
-                const text = await response.text();
                 const lines = text.trim().split(/\r?\n/);
                 const headers = lines[0].split(',').map(h => h.trim());
-
-                allData = lines.slice(1).filter(line => line.trim()).map(line => {
+                if (!headers.includes('date')) throw new Error('Missing data dates.');
+                const candidate = lines.slice(1).filter(line => line.trim()).map(line => {
                     const values = line.split(',');
-                    const row = {};
-                    headers.forEach((header, i) => {
-                        row[header.trim()] = values[i];
-                    });
-                    return row;
+                    return Object.fromEntries(headers.map((header, i) => [header, values[i]]));
                 });
+                if (!candidate.length || candidate.some((row, i) => !/^\d{4}-\d{2}$/.test(row.date) || (i && row.date <= candidate[i - 1].date))) throw new Error('Invalid monthly data.');
+                if (!initial && candidate.at(-1).date < allData.at(-1).date) throw new Error('An older release was returned.');
+                const confirmation = release ? await readPublishedDataRelease() : null;
+                if (release && confirmation?.version !== release.version) throw new Error('The release changed while loading.');
+                if (sharingChart) return;
 
-                if (allData.length === 0) {
-                    throw new Error('No data found in CSV file');
-                }
-
-                // Initialize sliders
+                const oldStart = allData[timeseriesStartIdx]?.date;
+                const oldEnd = allData[timeseriesEndIdx]?.date;
+                const wasAtLatest = initial || timeseriesEndIdx === allData.length - 1;
+                const presetText = document.querySelector('.preset-chips button.active')?.textContent.trim();
+                const preset = initial ? 5 : presetText === 'All' ? 'all' : /^\d+Y$/.test(presetText || '') ? Number(presetText.slice(0, -1)) : null;
+                activeDataRelease = release;
+                allData = candidate;
+                lastLoadedCsvText = text;
                 const maxIdx = allData.length - 1;
-
+                const nearest = date => { const idx = allData.findIndex(row => row.date >= date); return idx < 0 ? maxIdx : idx; };
+                timeseriesStartIdx = initial ? Math.max(0, maxIdx - 59) : nearest(oldStart);
+                timeseriesEndIdx = wasAtLatest ? maxIdx : nearest(oldEnd);
                 document.getElementById('timeseries-start-slider').max = maxIdx;
                 document.getElementById('timeseries-end-slider').max = maxIdx;
-
-                timeseriesStartIdx = Math.max(0, maxIdx - 59);
-                timeseriesEndIdx = maxIdx;
-
                 document.getElementById('timeseries-start-slider').value = timeseriesStartIdx;
                 document.getElementById('timeseries-end-slider').value = timeseriesEndIdx;
-
                 updateDateDisplays();
                 syncChartTypeAvailability();
                 updateCharts();
-                setDateRange(5);
-                updateDataStatus();
+                if (preset !== null && wasAtLatest) setDateRange(preset);
+                document.getElementById('dataLoadError')?.remove();
+                await updateDataStatus();
+                setRefreshWarning();
             } catch (error) {
-                console.error('Error loading data:', error);
-                const chartsEl = document.querySelector('.charts');
-                const banner = document.createElement('div');
-                banner.style.cssText = 'padding: 20px; background: #fdecea; border: 1px solid #f5c2c0; color: #b71c1c; border-radius: 4px; margin-bottom: 20px;';
-                banner.textContent = 'Error loading data: ' + error.message + ' — please make sure ism_data.csv is in the same directory.';
-                chartsEl.prepend(banner);
-            }
+                console.warn('Data update check failed; retrying automatically.', error);
+                if (initial) {
+                    let banner = document.getElementById('dataLoadError');
+                    if (!banner) {
+                        banner = document.createElement('p');
+                        banner.id = 'dataLoadError';
+                        banner.setAttribute('role', 'status');
+                        document.querySelector('.charts').prepend(banner);
+                    }
+                    banner.textContent = 'Unable to load data. Please check your connection; we will retry automatically.';
+                } else setRefreshWarning('Could not check for updates. Retrying automatically.');
+            } finally { refreshInProgress = false; }
         }
 
         async function updateDataStatus() {
+            const updated = document.getElementById('lastUpdated');
+            updated.hidden = true;
             const latest = allData[allData.length - 1].date;
             const month = new Date(`${latest}-01T12:00:00Z`).toLocaleDateString('en-US', {
                 month: 'long', year: 'numeric', timeZone: 'UTC'
@@ -455,14 +546,13 @@
             document.getElementById('dataThrough').textContent = `Data through ${month}`;
             document.getElementById('dataUpdate').hidden = false;
             try {
-                const response = await fetch(`data-update.json?v=${Date.now()}`, { cache: 'no-store' });
+                const response = await fetch(dataFileUrl('data-update.json'), { cache: 'no-store' });
                 if (!response.ok) return;
                 const metadata = await response.json();
                 // Only show a release date when the metadata matches the loaded CSV.
                 if (metadata.data_through !== latest || !/^\d{4}-\d{2}-\d{2}$/.test(metadata.bea_release_date)) return;
                 const date = new Date(`${metadata.bea_release_date}T12:00:00Z`);
                 if (Number.isNaN(date.getTime())) return;
-                const updated = document.getElementById('lastUpdated');
                 updated.textContent = `Last updated ${date.toLocaleDateString('en-US', {
                     month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC'
                 })}`;
@@ -934,9 +1024,9 @@
         document.getElementById('advanced-toggle').addEventListener('click', toggleAdvanced);
 
         // Download full dataset — served alongside the webapp as ismi_data.xlsx.
-        function downloadFullDataset() {
+        async function downloadFullDataset() {
             const a = document.createElement('a');
-            a.href = 'ismi_data.xlsx';
+            a.href = await latestDataFileUrl('ismi_data.xlsx');
             a.download = 'ismi_data.xlsx';
             a.click();
         }
@@ -1217,7 +1307,8 @@
             scheduleTimeSeriesUpdate();
         });
 
-        loadData();
+        loadData(true);
+        startDataRefresh(() => loadData());
     </script>
 </body>
 </html>

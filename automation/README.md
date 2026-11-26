@@ -43,3 +43,13 @@ Download timeouts observed during setup came from BEA full-history API requests.
 To reproduce the independent Stata check, run `python automation/tests/prepare_stata_reference.py /path/to/scratch`, open Stata in that folder and run `do corrected_check.do`. This requires Stata only for verification, never for hosted updates.
 
 The homepage displays `Last updated` from the official BEA release date, separately from the observation month (`Data through`). The public data-update.json records the reference month, BEA release timestamp, and actual successful dashboard export timestamp. It is committed and published with the CSV and Excel only after successful validation; routine checks do not advance the date. The UI only displays the release date when the metadata matches the loaded CSV month.
+
+## Freshness after uploads
+
+Pages deployment now packages the CSVs, Excel workbook and release metadata as one content-versioned snapshot. The dashboard first checks `data-manifest.json`, then loads files from that snapshot's unique URLs. New uploads and same-month revisions therefore get new file URLs rather than reusing a cached CSV or workbook. Existing root filenames remain available for external links.
+
+An open dashboard checks the small manifest once per minute while visible, when returning to the tab, after browser back/forward restoration, and after reconnecting. It downloads data again only when a new snapshot appears. It preserves the selected series, decomposition and date range, rolls a selected trailing preset forward, and leaves an explicitly historical window in place. Failed, incomplete or older snapshots do not replace the loaded release; checks retry automatically. Excel downloads recheck the current snapshot when clicked.
+
+A new upload still needs its GitHub Pages deployment to finish. The site cannot show an upload before GitHub has published it. The displayed Last updated remains the BEA release date, not the time of a background check.
+
+`node automation/tests/test_data_refresh.js` checks new months, same-month revisions, preserved selections, versioned Excel links, failed/older-release protection and refresh triggers. `python -m unittest discover -s automation/tests -p test_package_site.py` checks immutable snapshot paths and byte preservation. These run during Pages publishing as well as the release-update checks.

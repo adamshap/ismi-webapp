@@ -7,11 +7,12 @@ const match = html.match(/async function updateDataStatus\(\) \{[\s\S]*?(?=\n   
 assert.ok(match, 'Dashboard release-date function exists');
 async function render(metadata, ok = true) {
     const elements = Object.fromEntries(['dataThrough', 'dataUpdate', 'lastUpdated'].map(id => [id, {hidden: true, textContent: ''}]));
+    elements.lastUpdated.hidden = false; // Simulate a date from the previously loaded release.
     await vm.runInNewContext(`(async () => { ${match[0]}; await updateDataStatus(); })()`, {
         document: {getElementById: id => elements[id]},
         allData: [{date: '2026-10'}],
         fetch: async () => ({ok, json: async () => metadata}),
-        Date, console
+        Date, console, dataFileUrl: name => name
     });
     return elements;
 }
