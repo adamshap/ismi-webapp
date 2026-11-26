@@ -1,8 +1,14 @@
 name: Update ISMI from BEA
 on:
   schedule:
-    # Lightweight calendar checks; data downloads run only for a due release.
-    - cron: '47 12,13,17,21 * * *'
+    # Eastern time, including DST. Retry every 10 minutes for the first hour,
+    # then hourly; the official release calendar skips completed/not-due data.
+    - cron: '31,41,51 8 * * *'
+      timezone: 'America/New_York'
+    - cron: '1,11,21 9 * * *'
+      timezone: 'America/New_York'
+    - cron: '31 0-7,9-23 * * *'
+      timezone: 'America/New_York'
   workflow_dispatch:
     inputs:
       mode:
