@@ -1,0 +1,7 @@
+{
+  "latest_month": "2026-10",
+  "probe_sha256": "d2ac5497d603f03782bdc04ca89b929cd8776ea233d9d5246dcacbbf619ee8a6",
+  "inputs_sha256": "d663b302a0e706b22d48c4708e3d8c36c20b0754f2ee794c03de299d5c8c3723",
+  "last_full_rebuild_data_month": null,
+  "provenance": "Initialized from the existing work-computer Stata release; full BEA parity validation is recorded separately."
+}

@@ -1,0 +1,13 @@
+name: Publish website
+on:
+  push:
+    branches: [main]
+    paths: ['ism_webapp.html', 'ism_data.csv', 'ismi_data.xlsx', 'analytics-preferences.html', 'preview.png', '.github/workflows/*pages.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+jobs:
+  publish:
+    uses: ./.github/workflows/deploy-pages.yml
