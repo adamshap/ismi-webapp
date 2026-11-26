@@ -1,7 +1,6 @@
 from pathlib import Path
 import sys
 import json
-import hashlib
 import shutil
 import tempfile
 import unittest
@@ -13,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'automation'))
 from engine import calculate, combine, groups, rebuild_required
 from bea import inputs, to_panel, fingerprint
-from update import run, write_excel, MODEL_VERSION
+from update import run, write_excel, MODEL_VERSION, csv_fingerprint
 
 class PipelineTests(unittest.TestCase):
     @classmethod
@@ -71,6 +70,9 @@ class PipelineTests(unittest.TestCase):
         broken = self.panel.copy(); broken.loc[800,'pce_spend'] = np.nan
         with self.assertRaises(ValueError): calculate(broken,self.categories,[801])
 
+    def test_csv_checksum_survives_git_line_endings(self):
+        self.assertEqual(csv_fingerprint(b'a,b\n1,2\n'),csv_fingerprint(b'a,b\r\n1,2\r\n'))
+
     def test_noop_and_forced_rebuild(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
@@ -79,7 +81,7 @@ class PipelineTests(unittest.TestCase):
             baseline = pd.read_csv(ROOT/'ism_data.csv')
             baseline[baseline.date <= '2026-10'].to_csv(root/'ism_data.csv',index=False)
             state = {'model_version': MODEL_VERSION, 'probe_sha256': fingerprint(self.panel),
-                     'published_csv_sha256': hashlib.sha256((root/'ism_data.csv').read_bytes()).hexdigest()}
+                     'published_csv_sha256': csv_fingerprint((root/'ism_data.csv').read_bytes())}
             (root/'automation/state.json').write_text(json.dumps(state))
             before = (root/'ism_data.csv').read_bytes()
             with patch('update.BeaClient'), patch('update.inputs', return_value=self.panel):

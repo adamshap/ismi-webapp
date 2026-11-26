@@ -20,6 +20,11 @@ ROOT = Path(__file__).resolve().parents[1]
 MODEL_VERSION = '2026-11-nonhousing-corrected-yoy-v1'
 
 
+def csv_fingerprint(raw: bytes) -> str:
+    """Git can check out the same CSV with LF on Linux and CRLF on Windows."""
+    return hashlib.sha256(raw.replace(b'\r\n', b'\n')).hexdigest()
+
+
 def write_excel(frame: pd.DataFrame, path: Path) -> None:
     with pd.ExcelWriter(path, engine='openpyxl') as writer:
         for k in (2, 3, 4):
@@ -49,7 +54,7 @@ def run(root: Path, mode: str, full_history: bool, cached_inputs: Path | None, o
     mapping = pd.read_csv(root / 'automation/categories.csv')
     previous_bytes = (root / 'ism_data.csv').read_bytes()
     previous = pd.read_csv(BytesIO(previous_bytes))
-    previous_hash = hashlib.sha256(previous_bytes).hexdigest()
+    previous_hash = csv_fingerprint(previous_bytes)
     state_path = root / 'automation/state.json'
     state = json.loads(state_path.read_text()) if state_path.exists() else {}
     baseline_changed = state.get('published_csv_sha256') != previous_hash
@@ -135,7 +140,7 @@ def run(root: Path, mode: str, full_history: bool, cached_inputs: Path | None, o
             updated_state = {
                 'latest_month': latest, 'probe_sha256': probe_hash, 'inputs_sha256': fingerprint(panel),
                 'model_version': MODEL_VERSION,
-                'published_csv_sha256': hashlib.sha256((temp / 'ism_data.csv').read_bytes()).hexdigest() if data_changed else previous_hash,
+                'published_csv_sha256': csv_fingerprint((temp / 'ism_data.csv').read_bytes()) if data_changed else previous_hash,
                 'last_full_rebuild_data_month': latest if full else state.get('last_full_rebuild_data_month'),
                 'last_successful_change_utc': now.isoformat(),
             }
