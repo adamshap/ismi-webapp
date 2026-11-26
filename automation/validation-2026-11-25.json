@@ -45,5 +45,10 @@
     "ismi_services_ar1_k4": 691
   },
   "independent_corrected_stata_comparisons": 2916,
-  "independent_corrected_stata_mismatches": 0
+  "independent_corrected_stata_mismatches": 0,
+  "bea_haver_input_cells": 213268,
+  "bea_haver_max_absolute_difference": 0.0,
+  "bea_haver_missingness_identical": true,
+  "hosted_validation_run": "https://github.com/adamshap/ismi-webapp/actions/runs/45749036759",
+  "hosted_benchmark_and_publication_run": "https://github.com/adamshap/ismi-webapp/actions/runs/45749353679"
 }

@@ -4,5 +4,6 @@
   "inputs_sha256": "d663b302a0e706b22d48c4708e3d8c36c20b0754f2ee794c03de299d5c8c3723",
   "model_version": "2026-11-nonhousing-corrected-yoy-v1",
   "last_full_rebuild_data_month": "2026-10",
-  "last_successful_change_utc": "2026-11-26T03:30:54.659477+00:00"
+  "last_successful_change_utc": "2026-11-26T03:30:54.659477+00:00",
+  "published_csv_sha256": "030802207b68e4f718a2b93f0033fb50bf05402fe0c8bbc133513861ed6399f4"
 }

@@ -28,11 +28,11 @@ jobs:
     outputs:
       data_changed: ${{ steps.update.outputs.data_changed }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: main
           fetch-depth: 1
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
           cache: pip
@@ -61,7 +61,7 @@ jobs:
           git push origin HEAD:main
       - name: Save validation report and candidate downloads
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ismi-validation-${{ github.run_id }}
           path: update-artifacts/
