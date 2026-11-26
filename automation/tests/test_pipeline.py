@@ -98,6 +98,40 @@ class PipelineTests(unittest.TestCase):
                 (root/'ism_data.csv').write_bytes(before)
             self.assertEqual(before,(root/'ism_data.csv').read_bytes())
 
+    def test_scheduled_release_waits_without_publishing_older_revisions(self):
+        paths = [ROOT/'ism_data.csv',ROOT/'ismi_data.xlsx',ROOT/'automation/state.json',ROOT/'data-update.json']
+        before = [p.read_bytes() for p in paths]
+        # API has a changed prior-month vintage but not the expected new month yet.
+        with tempfile.TemporaryDirectory() as folder:
+            with patch('update.BeaClient'), patch('update.inputs', return_value=self.panel):
+                with patch('update.calculate',side_effect=AssertionError('must not calculate old month')):
+                    report=run(ROOT,'update',False,None,Path(folder),'2026-11')
+        self.assertEqual(report['status'],'waiting_for_release')
+        self.assertFalse(report['changed'])
+        self.assertEqual(before,[p.read_bytes() for p in paths])
+
+    def test_release_date_is_installed_with_data_and_never_on_failure(self):
+        candidate = pd.read_csv(ROOT/'ism_data.csv')
+        candidate = candidate[candidate.date <= '2026-10']
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder); (root/'automation').mkdir()
+            shutil.copyfile(ROOT/'automation/categories.csv',root/'automation/categories.csv')
+            (root/'automation/state.json').write_text('{}')
+            candidate[candidate.date < '2026-10'].to_csv(root/'ism_data.csv',index=False)
+            before=(root/'ism_data.csv').read_bytes()
+            with patch('update.BeaClient'), patch('update.inputs',return_value=self.panel), patch('update.calculate',return_value=candidate):
+                with patch('update.release_metadata',side_effect=RuntimeError('metadata unavailable')):
+                    with self.assertRaisesRegex(RuntimeError,'metadata unavailable'):
+                        run(root,'update',False,None,root/'out','2026-10','2026-11-25T13:30:00+00:00')
+                self.assertEqual(before,(root/'ism_data.csv').read_bytes())
+                self.assertFalse((root/'data-update.json').exists())
+                report=run(root,'update',False,None,root/'out','2026-10','2026-11-25T13:30:00+00:00')
+            metadata=json.loads((root/'data-update.json').read_text())
+            self.assertTrue(report['data_changed'])
+            self.assertEqual(metadata['bea_release_date'],'2026-11-25')
+            self.assertEqual(metadata['data_through'],'2026-10')
+            self.assertEqual(pd.read_csv(root/'ism_data.csv').date.max(),'2026-10')
+
     def test_download_failure_cannot_change_published_files(self):
         paths = [ROOT/'ism_data.csv',ROOT/'ismi_data.xlsx',ROOT/'automation/state.json']
         before = [p.read_bytes() for p in paths]

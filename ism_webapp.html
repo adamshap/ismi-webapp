@@ -77,6 +77,17 @@
             font-weight: 400;
         }
 
+        .data-update {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px 16px;
+            margin-top: 6px;
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .data-update[hidden] { display: none; }
+
         .description {
             background: #f8fafc;
             border-left: 4px solid #004C97;
@@ -935,6 +946,10 @@
         <header>
             <h1>Inflation Shock Momentum Index (ISMI)</h1>
             <div class="subtitle">Lansing and Shapiro (2026) | <a href="https://www.frbsf.org/wp-content/uploads/wp2026-10.pdf" target="_blank">Working Paper</a></div>
+            <div class="data-update" id="dataUpdate" hidden>
+                <time id="lastUpdated" hidden></time>
+                <span id="dataThrough"></span>
+            </div>
         </header>
 
         <div class="description" id="description">
@@ -1243,6 +1258,7 @@
                 updateDateDisplays();
                 syncChartTypeAvailability();
                 updateCharts();
+                updateDataStatus();
             } catch (error) {
                 console.error('Error loading data:', error);
                 const chartsEl = document.querySelector('.charts');
@@ -1250,6 +1266,32 @@
                 banner.style.cssText = 'padding: 20px; background: #fdecea; border: 1px solid #f5c2c0; color: #b71c1c; border-radius: 4px; margin-bottom: 20px;';
                 banner.textContent = 'Error loading data: ' + error.message + ' — please make sure ism_data.csv is in the same directory.';
                 chartsEl.prepend(banner);
+            }
+        }
+
+        async function updateDataStatus() {
+            const latest = allData[allData.length - 1].date;
+            const month = new Date(`${latest}-01T12:00:00Z`).toLocaleDateString('en-US', {
+                month: 'long', year: 'numeric', timeZone: 'UTC'
+            });
+            document.getElementById('dataThrough').textContent = `Data through ${month}`;
+            document.getElementById('dataUpdate').hidden = false;
+            try {
+                const response = await fetch(`data-update.json?v=${Date.now()}`, { cache: 'no-store' });
+                if (!response.ok) return;
+                const metadata = await response.json();
+                // Only show a release date when the metadata matches the loaded CSV.
+                if (metadata.data_through !== latest || !/^\d{4}-\d{2}-\d{2}$/.test(metadata.bea_release_date)) return;
+                const date = new Date(`${metadata.bea_release_date}T12:00:00Z`);
+                if (Number.isNaN(date.getTime())) return;
+                const updated = document.getElementById('lastUpdated');
+                updated.textContent = `Last updated ${date.toLocaleDateString('en-US', {
+                    month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC'
+                })}`;
+                updated.dateTime = metadata.bea_release_date;
+                updated.hidden = false;
+            } catch (error) {
+                console.warn('Release date is unavailable; data coverage is shown from the CSV.');
             }
         }
 

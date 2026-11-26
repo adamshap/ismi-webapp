@@ -22,7 +22,7 @@ jobs:
       - name: Stage public dashboard files
         run: |
           mkdir _site
-          cp ism_webapp.html ism_data.csv ismi_data.xlsx analytics-preferences.html preview.png _site/
+          cp ism_webapp.html ism_data.csv ismi_data.xlsx data-update.json analytics-preferences.html preview.png _site/
           cp ism_webapp.html _site/index.html
           touch _site/.nojekyll
       - uses: actions/upload-pages-artifact@v5

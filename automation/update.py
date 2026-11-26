@@ -15,6 +15,7 @@ import pandas as pd
 
 from bea import BeaClient, fingerprint, inputs
 from engine import calculate, combine, rebuild_required
+from release_calendar import release_metadata
 
 ROOT = Path(__file__).resolve().parents[1]
 MODEL_VERSION = '2026-11-nonhousing-corrected-yoy-v1'
@@ -50,7 +51,8 @@ def write_excel(frame: pd.DataFrame, path: Path) -> None:
                 raise ValueError('Excel export coverage or schema does not match the CSV')
 
 
-def run(root: Path, mode: str, full_history: bool, cached_inputs: Path | None, output: Path) -> dict:
+def run(root: Path, mode: str, full_history: bool, cached_inputs: Path | None, output: Path,
+        expected_month: str | None = None, release_utc: str | None = None) -> dict:
     mapping = pd.read_csv(root / 'automation/categories.csv')
     previous_bytes = (root / 'ism_data.csv').read_bytes()
     previous = pd.read_csv(BytesIO(previous_bytes))
@@ -81,6 +83,10 @@ def run(root: Path, mode: str, full_history: bool, cached_inputs: Path | None, o
         probe = inputs(prices, spending, mapping)
         probe_hash = fingerprint(probe)
         latest_probe = str(pd.Period('1960-01', freq='M') + int(probe.index.max()))
+        if expected_month and latest_probe < expected_month:
+            return {'status': 'waiting_for_release', 'latest_month': previous_latest,
+                    'available_month': latest_probe, 'expected_month': expected_month,
+                    'changed': False, 'data_changed': False}
         if latest_probe < previous_latest:
             raise ValueError('BEA is serving an older release; refusing to roll back the dashboard')
         if (mode == 'update' and not full_history and not baseline_changed and state.get('model_version') == MODEL_VERSION
@@ -133,8 +139,13 @@ def run(root: Path, mode: str, full_history: bool, cached_inputs: Path | None, o
         temp = Path(temp)
         merged.to_csv(temp / 'ism_data.csv', index=False, float_format='%.9g', lineterminator='\n')
         write_excel(merged, temp / 'ismi_data.xlsx')
+        names = ['ism_data.csv', 'ismi_data.xlsx']
+        if mode != 'validate' and data_changed:
+            metadata = release_metadata(latest, now, release_utc if latest == expected_month else None)
+            (temp / 'data-update.json').write_text(json.dumps(metadata, indent=2) + '\n', encoding='utf-8')
+            names.append('data-update.json')
         # Always retain candidates as reviewable workflow artifacts.
-        for name in ('ism_data.csv', 'ismi_data.xlsx'):
+        for name in names:
             (output / name).write_bytes((temp / name).read_bytes())
         if mode != 'validate':
             updated_state = {
@@ -148,7 +159,7 @@ def run(root: Path, mode: str, full_history: bool, cached_inputs: Path | None, o
             if (root / 'ism_data.csv').read_bytes() != previous_bytes:
                 raise ValueError('Dashboard CSV changed during calculation; refusing to overwrite concurrent edits')
             if data_changed:
-                for name in ('ism_data.csv', 'ismi_data.xlsx'):
+                for name in names:
                     (temp / name).replace(root / name)
             state_path.write_text(json.dumps(updated_state, indent=2) + '\n', encoding='utf-8')
             report['changed'] = True
@@ -162,8 +173,11 @@ def main() -> None:
     parser.add_argument('--full-history', action='store_true')
     parser.add_argument('--cached-inputs', type=Path)
     parser.add_argument('--output', type=Path, default=ROOT / 'update-artifacts')
+    parser.add_argument('--expected-month', help='Wait without publishing until this scheduled reference month is available')
+    parser.add_argument('--release-utc', help='Official calendar timestamp for the expected reference month')
     args = parser.parse_args()
-    report = run(args.root, args.mode, args.full_history, args.cached_inputs, args.output)
+    report = run(args.root, args.mode, args.full_history, args.cached_inputs, args.output,
+                 args.expected_month, args.release_utc)
     args.output.mkdir(parents=True, exist_ok=True)
     (args.output / 'report.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
     print(json.dumps(report, indent=2))
