@@ -2,7 +2,7 @@ name: Publish website
 on:
   push:
     branches: [main]
-    paths: ['ism_webapp.html', 'ism_data.csv', 'ismi_data.xlsx', 'data-update.json', 'analytics-preferences.html', 'preview.png', 'automation/package_site.py', '.github/workflows/*pages.yml']
+    paths: ['ism_webapp.html', 'ism_data.csv', 'ismi_data.xlsx', 'data-update.json', 'analytics-preferences.html', 'preview.png', 'automation/package_site.py', 'automation/preview/**', '.github/workflows/*pages.yml']
   workflow_dispatch:
 permissions:
   contents: read

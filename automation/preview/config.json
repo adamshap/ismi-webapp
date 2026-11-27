@@ -1,0 +1,8 @@
+{
+  "html": "ism_webapp.html",
+  "chartId": "timeSeriesChart",
+  "csv": "ism_data.csv",
+  "title": "Inflation Shock Momentum Index (ISMI)",
+  "caption": "Headline PCE \u00b7 Lansing and Shapiro (2026)",
+  "baseUrl": "https://adamshap.github.io/ismi-webapp/"
+}
