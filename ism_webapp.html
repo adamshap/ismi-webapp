@@ -79,13 +79,17 @@
         .chart-container { min-width: 0; }
         .chart-title { font-size: 16px; font-weight: 600; margin-bottom: 10px; line-height: 1.4; }
         .chart-toolbar { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-bottom: 10px; }
-        .date-range-control { flex: 1; min-width: 0; }
-        .date-range-label { font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+        .date-range-control { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 20px; flex: 1; min-width: 0; }
+        .date-range-label { font-size: 12px; color: var(--muted); }
+        .custom-date-range { margin-left: auto; color: var(--muted); font-size: 13px; }
+        .custom-date-range summary { padding: 8px 0; cursor: pointer; }
+        .custom-date-range summary:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+        .custom-date-range[open] { width: 100%; margin: 0; }
         .preset-chips { display: flex; gap: 3px; }
         .preset-chips button { min-width: 44px; min-height: 36px; padding: 6px 12px; background: white; border: 0; border-radius: 5px; color: var(--muted); font-size: 13px; }
         .preset-chips button.active { background: #eaf1f8; color: var(--blue); font-weight: 600; }
         .preset-chips button:hover { background: var(--wash); }
-        .chart-type-toggle { display: flex; align-self: end; border: 1px solid var(--line); border-radius: 5px; overflow: hidden; }
+        .chart-type-toggle { display: flex; align-self: start; border: 1px solid var(--line); border-radius: 5px; overflow: hidden; }
         .chart-type-toggle button { min-height: 36px; padding: 6px 18px; border: 0; background: white; color: var(--muted); font-size: 13px; }
         .chart-type-toggle button.active { color: var(--blue); background: #eaf1f8; font-weight: 600; }
         .chart-type-toggle button:disabled { color: #aab4be; cursor: not-allowed; }
@@ -132,11 +136,11 @@
             .chart-title { font-size: 15px; margin-bottom: 8px; }
             .chart-toolbar { gap: 8px; }
             .date-range-label { display: none; }
-            .preset-chips { gap: 0; justify-content: space-between; }
+            .preset-chips { width: 100%; gap: 0; justify-content: space-between; }
             .preset-chips button { min-width: 0; flex: 1; min-height: 44px; padding: 8px 2px; font-size: 13px; }
             .chart-type-toggle { margin-left: auto; }
             .chart-type-toggle button { min-height: 36px; padding: 6px 13px; }
-            .date-sliders { display: none; }
+            .custom-date-range { display: none; }
             .chart-wrapper { height: 310px; }
             .chart-share-actions { gap: 2px 16px; justify-content: flex-start; }
             #save-chart-image-btn { display: none; }
@@ -314,6 +318,7 @@
                     <button type="button" onclick="setDateRange(10)">10Y</button>
                     <button type="button" onclick="setDateRange('all')">All</button>
                 </div>
+                <details class="custom-date-range"><summary>Custom dates</summary>
                 <div class="date-sliders">
                     <div class="slider-row">
                         <div class="date-display" id="timeseries-start">—</div>
@@ -326,6 +331,7 @@
                         <div class="date-label-inline">End Date</div>
                     </div>
                 </div>
+                </details>
             </div>
 
             <div class="chart-type-toggle">
